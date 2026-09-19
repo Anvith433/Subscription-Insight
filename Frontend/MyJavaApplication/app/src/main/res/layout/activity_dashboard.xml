@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorSurface">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Usage Analytics"
+            app:titleTextColor="@color/colorPrimary" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!--
+              Account totals. Starts GONE and is only shown once the summary call
+              succeeds: a card full of dashes is worse than no card, because it looks
+              like the figures are genuinely zero.
+            -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvSummaryPeriod"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="This month"
+                        android:textColor="#757575"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvSummarySpend"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="INR 0.00 across 0 subscriptions"
+                        android:textColor="@color/colorOnSurface"
+                        android:textSize="16sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="12dp"
+                        android:background="#EEEEEE" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="You could stop paying"
+                        android:textColor="#757575"
+                        android:textSize="13sp" />
+
+                    <!-- The emphasised number: the one figure the product exists to give. -->
+                    <TextView
+                        android:id="@+id/tvSummarySavings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="INR 0.00 / month"
+                        android:textColor="#2E7D32"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvSummaryWaste"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="0% of your spend · 0 unused"
+                        android:textColor="#757575"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Chart Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!--
+                      Was "Weekly Usage (Mins)", which contradicted the data: the
+                      dashboard is monthly, and renderBarChart puts the real period in
+                      the chart description just below this line.
+                    -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Usage per subscription (mins)"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorPrimary"
+                        android:layout_marginBottom="16dp"/>
+
+                    <com.github.mikephil.charting.charts.BarChart
+                        android:id="@+id/barChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="250dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Recommendations Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recommendations"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorOnBackground"
+                android:layout_marginBottom="12dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

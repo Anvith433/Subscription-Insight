@@ -1,0 +1,76 @@
+spring:
+  application:
+    name: subscriptions-backend
+
+  datasource:
+    # Overridable by environment variable so credentials and host need not be edited
+    # in a tracked file to run against a different database. The default is the locally
+    # installed MySQL on 3306. docker-compose.yml publishes its MySQL on host 3308 to
+    # stay clear of that, so running against the container means DB_URL=...:3308/...
+    url: ${DB_URL:jdbc:mysql://localhost:3306/subscription_db?serverTimezone=Asia/Kolkata&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that the entities match it.
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          time_zone: Asia/Kolkata
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    # repair-on-migrate rewrites recorded checksums to match the files on disk. That
+    # hides a genuine problem -- an already-applied migration having been edited -- so
+    # it is off. Fix data defects with a new forward migration instead, which is what
+    # V6 does for the V1/V2 seed problems.
+    repair-on-migrate: false
+    locations: classpath:db/migration
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+
+logging:
+  level:
+    # Raise to DEBUG to see which migration files Flyway resolved, which it recorded as
+    # already applied, and the checksum of each -- that is what diagnoses a migration
+    # being "skipped", and it is the correct tool for it. Do NOT reach for
+    # spring.flyway.repair-on-migrate to make a mismatch go away: it rewrites the
+    # recorded checksums to match the files, which is exactly how an edited-after-apply
+    # migration stays invisible. See V7's comment for what that costs.
+    org.flywaydb: ${FLYWAY_LOG_LEVEL:INFO}
+
+server:
+  # Jenkins already occupies 8080 on this development machine. Keeping the backend
+  # on a configurable, non-conflicting port also makes the Android URL deterministic.
+  port: ${SERVER_PORT:8081}
+  error:
+    # spring-boot-devtools is on the classpath and defaults this to "always", so a 500
+    # response body carried a full Java stack trace -- package layout, framework
+    # versions, and the failing query path, handed to any caller.
+    include-stacktrace: never
+    # The messages this code raises are deliberately non-revealing ("Subscription not
+    # found" for both absent and someone else's), so returning them is useful to a
+    # client without disclosing anything.
+    include-message: always
+
+jwt:
+  # A signing key committed to source control is not a secret: anyone with the repo
+  # can mint a valid token for any account. The default below exists only so the app
+  # starts in local development -- set JWT_SECRET anywhere else. HS256 needs at least
+  # 32 bytes.
+  secret: ${JWT_SECRET:dev-only-insecure-key_must_be_at_least_32_characters_long}
+  expiration: ${JWT_EXPIRATION:36000000}
+
+app:
+  # Re-hashes the placeholder passwords the V2 seed data inserted as the literal
+  # string 'hashed_password', which BCrypt cannot verify, so no seeded user could log
+  # in. Off unless explicitly enabled; it must never run against real data.
+  seed:
+    fix-passwords: ${SEED_FIX_PASSWORDS:false}
+    password: ${SEED_PASSWORD:password123}

@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">MyJavaApplication</string>
+    <string name="login_title">SubScript Advisor</string>
+    <string name="username_hint">Username</string>
+    <string name="email_hint">Email</string>
+    <string name="password_hint">Password</string>
+    <string name="confirm_password_hint">Confirm Password</string>
+    <string name="login_button">Login</string>
+    <string name="signup_button">Sign Up</string>
+    <string name="goto_signup">Don\'t have an account? Sign Up</string>
+    <string name="goto_login">Already have an account? Login</string>
+    <string name="grant_permission">1. Grant Usage Access</string>
+    <string name="view_analytics">2. View Analytics</string>
+</resources>

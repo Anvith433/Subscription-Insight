@@ -1,0 +1,35 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: subscription-mysql
+    ports:
+      # Not 3306: a locally installed MySQL service commonly already owns it, and the
+      # container then fails to bind with no obvious explanation. Override with
+      # MYSQL_HOST_PORT if 3308 is taken too. Inside the container the server still
+      # listens on 3306, so DB_URL must use whichever host port is published here.
+      - "${MYSQL_HOST_PORT:-3308}:3306"
+    environment:
+      MYSQL_DATABASE: subscription_db
+      # Named 'postgres' for historical reasons; it is a MySQL user. Kept as-is so it
+      # keeps matching the application's default credentials.
+      MYSQL_USER: postgres
+      MYSQL_PASSWORD: postgres
+      MYSQL_ROOT_PASSWORD: postgres
+      TZ: Asia/Kolkata
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppostgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+# A block of Spring 'flyway:' properties used to sit here, indented under the mysql
+# service's healthcheck. Docker Compose rejected the file outright -- 'flyway',
+# 'enabled' and 'baseline-on-migrate' are not service keys -- so `docker compose up`
+# never ran. Flyway is configured in application.yml, which is where those keys
+# belong; they are not duplicated here.
+
+volumes:
+  mysqldata:

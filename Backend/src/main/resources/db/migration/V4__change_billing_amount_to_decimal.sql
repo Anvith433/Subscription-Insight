@@ -1,0 +1,3 @@
+
+ALTER TABLE billing_records 
+MODIFY COLUMN amount DECIMAL(10, 2) NOT NULL;

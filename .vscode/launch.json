@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot App",
+            "request": "launch",
+            "mainClass": "com.example.DemoApplication",
+            "projectName": "demo",
+            "vmArgs": "-Duser.timezone=Asia/Kolkata"  
+        }
+    ]
+}

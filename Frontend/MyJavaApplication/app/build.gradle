@@ -1,0 +1,72 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
+// Android emulators reach the host through 10.0.2.2. A physical device can
+// override this in the untracked local.properties file, for example:
+// backendBaseUrl=http://10.146.45.214:8081/
+def configuredBackendBaseUrl = providers.gradleProperty('backendBaseUrl').orElse(
+        localProperties.getProperty('backendBaseUrl', System.getenv('BACKEND_BASE_URL') ?: 'http://10.0.2.2:8081/')
+).get()
+if (!configuredBackendBaseUrl.endsWith('/')) {
+    configuredBackendBaseUrl += '/'
+}
+
+android {
+    namespace 'com.example.myjavaapplication'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.myjavaapplication"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        buildConfigField "String", "BACKEND_BASE_URL", "\"${configuredBackendBaseUrl}\""
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+    
+    implementation 'com.github.TheBotBox:AppsUsageMonitorAPI:1.1'
+
+    // Retrofit
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    
+    // OkHttp Logging (Added for debugging 401 errors)
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+
+    // MPAndroidChart
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+}

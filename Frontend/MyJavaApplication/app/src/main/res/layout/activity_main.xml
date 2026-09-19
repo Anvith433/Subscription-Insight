@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/loginCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@color/colorSurface">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Subscription Insight"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="32dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilActualUsername"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Full Name"
+                    android:visibility="gone"
+                    android:layout_marginBottom="16dp"
+                    app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                    app:hintTextColor="@color/colorPrimary"
+                    app:boxStrokeColor="@color/colorPrimary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etActualUsername"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/black"
+                        android:inputType="textPersonName" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilEmail"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Gmail Address"
+                    android:layout_marginBottom="16dp"
+                    app:startIconDrawable="@android:drawable/ic_dialog_email"
+                    app:hintTextColor="@color/colorPrimary"
+                    app:boxStrokeColor="@color/colorPrimary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/black"
+                        android:inputType="textEmailAddress" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPassword"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Password"
+                    android:layout_marginBottom="16dp"
+                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+                    app:passwordToggleEnabled="true"
+                    app:hintTextColor="@color/colorPrimary"
+                    app:boxStrokeColor="@color/colorPrimary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/black"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilConfirmPassword"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Confirm Password"
+                    android:visibility="gone"
+                    android:layout_marginBottom="24dp"
+                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+                    app:passwordToggleEnabled="true"
+                    app:hintTextColor="@color/colorPrimary"
+                    app:boxStrokeColor="@color/colorPrimary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etConfirmPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/black"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Login"
+                    app:cornerRadius="8dp"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:id="@+id/tvSignupLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="New user? Sign up here"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_gravity="center"
+                    android:textStyle="bold"
+                    android:padding="8dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:id="@+id/layoutPostLogin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="24dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPermission"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="1. Grant Usage Access"
+                android:layout_marginBottom="12dp"
+                app:cornerRadius="8dp"
+                app:backgroundTint="#4CAF50" />
+
+            <!--
+              Before this button existed, step 2 was Sync, which told a new user to "add
+              a subscription first" with no screen to do it on. Adding one has to come
+              before syncing, so it is numbered that way.
+            -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSubscriptions"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="2. Manage Subscriptions"
+                android:layout_marginBottom="12dp"
+                app:cornerRadius="8dp"
+                app:backgroundTint="@color/indigo_700" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSync"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="3. Sync Usage Data"
+                android:layout_marginBottom="12dp"
+                app:cornerRadius="8dp"
+                app:backgroundTint="@color/blue_600" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDashboard"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="4. View Analytics Dashboard"
+                app:cornerRadius="8dp"
+                app:strokeColor="@color/colorPrimary"
+                android:textColor="@color/colorPrimary" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

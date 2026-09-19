@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The subscriptions screen. Same shell as activity_dashboard.xml (AppBarLayout with a
+  MaterialToolbar over a CoordinatorLayout), with the RecyclerView filling the body and
+  an extended FAB over it.
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorSurface">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="My Subscriptions"
+            app:titleTextColor="@color/colorPrimary" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerSubscriptions"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="88dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <!--
+      This is the first screen a new account sees, so an empty list has to explain itself
+      rather than look like a failed load.
+    -->
+    <TextView
+        android:id="@+id/tvEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:paddingHorizontal="32dp"
+        android:text="No subscriptions yet.\n\nTap Add subscription to enter your first one. Pick the app it belongs to and syncing will start matching your usage to it."
+        android:textColor="#757575"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:text="Add subscription"
+        android:textColor="@color/colorOnPrimary"
+        app:backgroundTint="@color/colorPrimary"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="@color/colorOnPrimary" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
