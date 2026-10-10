@@ -24,7 +24,9 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.card.MaterialCardView;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import retrofit2.Call;
@@ -36,7 +38,7 @@ public class DashboardActivity extends AppCompatActivity {
     private BarChart barChart;
     private MaterialCardView cardSummary;
     private TextView tvSummaryPeriod, tvSummarySpend, tvSummaryCount, tvSummarySavings, tvSummaryWaste;
-    private TextView tvChartCaption;
+    private TextView tvChartCaption, tvPeriodNotice;
     private ApiService apiService;
     private long userId;
     private String jwtToken;
@@ -59,6 +61,7 @@ public class DashboardActivity extends AppCompatActivity {
         tvSummarySavings = findViewById(R.id.tvSummarySavings);
         tvSummaryWaste = findViewById(R.id.tvSummaryWaste);
         tvChartCaption = findViewById(R.id.tvChartCaption);
+        tvPeriodNotice = findViewById(R.id.tvPeriodNotice);
         styleChart();
 
         userId = getIntent().getLongExtra("USER_ID", -1);
@@ -94,6 +97,7 @@ public class DashboardActivity extends AppCompatActivity {
                                 "No subscriptions on this account yet. Add one first, "
                                         + "then sync.", Toast.LENGTH_LONG).show();
                     } else {
+                        showPeriodNotice(list.get(0).getBillingPeriod());
                         renderBarChart(list);
                         RecommendationAdapter adapter = new RecommendationAdapter(list);
                         recyclerView.setAdapter(adapter);
@@ -168,6 +172,22 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         cardSummary.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * The server shows the newest month that has any usage, so until the first sync of
+     * a month the dashboard is last month's. That is real data, but it should never be
+     * mistaken for this month's, so it says so.
+     */
+    private void showPeriodNotice(String period) {
+        String thisMonth = new SimpleDateFormat("yyyy-MM", Locale.ROOT).format(new Date());
+        if (period == null || period.equals(thisMonth)) {
+            tvPeriodNotice.setVisibility(View.GONE);
+            return;
+        }
+        tvPeriodNotice.setText("Showing " + Formats.month(period) + ". Nothing has been synced for "
+                + Formats.month(thisMonth) + " yet: sync from the home screen to see this month.");
+        tvPeriodNotice.setVisibility(View.VISIBLE);
     }
 
     /** Every money field on the summary is nullable -- an account with nothing to total. */
@@ -250,11 +270,14 @@ public class DashboardActivity extends AppCompatActivity {
         barChart.setLayoutParams(params);
 
         barChart.setData(data);
-        // The dashboard is monthly, not daily; name the month the data is actually for.
+        // Says exactly what was measured. Playback without the app on screen is only
+        // visible to the phone from Android 10, and nothing on another device ever is.
         String period = list.get(0).getBillingPeriod();
-        tvChartCaption.setText(period == null
-                ? "Time in each app, coloured by its verdict."
-                : "Time in each app in " + Formats.month(period) + ", coloured by its verdict.");
+        String measured = UsageReader.countsBackgroundPlayback()
+                ? "Screen time and background playback on this phone"
+                : "Screen time on this phone";
+        tvChartCaption.setText(measured + (period == null ? "" : " in " + Formats.month(period))
+                + ". Watching on a TV or laptop isn't counted.");
         barChart.animateY(700);
         barChart.invalidate();
     }

@@ -61,6 +61,21 @@
             android:paddingBottom="32dp">
 
             <!--
+              Shown only when the newest month with data is not this one, so last
+              month's figures are never mistaken for this month's.
+            -->
+            <TextView
+                android:id="@+id/tvPeriodNotice"
+                style="@style/Text.Insight.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_notice"
+                android:padding="12dp"
+                android:textColor="@color/ink"
+                android:visibility="gone" />
+
+            <!--
               Account totals, laid out like a receipt. Starts GONE and is only shown once
               the summary call succeeds: a card full of zeros is worse than no card,
               because it looks like the figures are genuinely zero.
@@ -180,7 +195,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp"
-                android:text="Time in each app, coloured by its verdict." />
+                android:text="Time in each app on this phone, coloured by its verdict." />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

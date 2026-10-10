@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.yourorg.Subscriptions.Subscription;
 import com.yourorg.Subscriptions.SubscriptionRepository;
 import com.yourorg.Subscriptions.SubscriptionStatus;
+import com.yourorg.UserSnapShot.DailyUsage;
 import com.yourorg.UserSnapShot.UserSnapShotRepository;
 import com.yourorg.UserSnapShot.UserSnapShots;
 
@@ -79,7 +80,7 @@ public class RecommendationService {
                     sub.getCurrency(),
                     sub.getMonthlyPrice(),
                     now == null ? null : now.getUsageCount(),
-                    prior == null ? null : prior.getUsageCount(),
+                    comparablePrior(now, prior, period, today),
                     now == null ? null : now.getLastUsedAt(),
                     sub.getStartDate(),
                     period,
@@ -95,6 +96,26 @@ public class RecommendationService {
             written.add(upsert(userId, sub, period, facts.usageMinutes(), engine.assess(facts)));
         }
         return written;
+    }
+
+    /**
+     * Last month's usage scaled to the days this month's figure covers, or null when
+     * there is no fair comparison -- see {@link DailyUsage#comparablePrior}. A row
+     * with no recorded coverage (written before V8) is read as covering its whole
+     * month, or the month so far for the current one, as everywhere else.
+     */
+    private static Integer comparablePrior(UserSnapShots now, UserSnapShots prior,
+                                           YearMonth period, LocalDate today) {
+        if (now == null || prior == null) {
+            return null;
+        }
+        YearMonth priorMonth = period.minusMonths(1);
+        int priorObserved = prior.getObservedDays() != null ? prior.getObservedDays() : priorMonth.lengthOfMonth();
+        int priorElapsed = prior.getMonthDaysElapsed() != null ? prior.getMonthDaysElapsed() : priorMonth.lengthOfMonth();
+        int currentDays = now.getObservedDays() != null
+                ? now.getObservedDays()
+                : (period.equals(YearMonth.from(today)) ? today.getDayOfMonth() : period.lengthOfMonth());
+        return DailyUsage.comparablePrior(prior.getUsageCount(), priorObserved, priorElapsed, currentDays);
     }
 
     /** Recomputes the current month. Called after a usage sync. */

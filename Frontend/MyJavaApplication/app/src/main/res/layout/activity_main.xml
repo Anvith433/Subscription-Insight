@@ -333,7 +333,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Pull in how long you spent in those apps." />
+                            android:text="Android keeps about ten days of usage, so sync once a week." />
                     </LinearLayout>
 
                     <ImageView

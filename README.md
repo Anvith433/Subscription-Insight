@@ -53,7 +53,8 @@ minutes costs ₹310/hour, and the analysis says so with the arithmetic attached
 ```text
 ┌─────────────────────────────┐
 │  Android app (Java)         │
-│  AppsUsageMonitorAPI        │  measures per-package foreground time
+│  UsageReader                │  minutes in use per app, per day,
+│  (UsageStatsManager)        │  read from Android's own usage log
 └──────────────┬──────────────┘
                │  Retrofit / JSON over HTTP, JWT in Authorization header
                ▼
@@ -112,7 +113,7 @@ The backend is a **modular monolith**: one deployable, packages split by domain
 | minSdk | **24** (Android 7.0) |
 | Networking | Retrofit + Gson converter + OkHttp logging interceptor |
 | UI | AppCompat, Material 1.10.0, ConstraintLayout, RecyclerView adapter |
-| Usage data | `com.github.TheBotBox:AppsUsageMonitorAPI:1.1` (JitPack) — wraps `UsageStatsManager`; needs `PACKAGE_USAGE_STATS` + `QUERY_ALL_PACKAGES` |
+| Usage data | `UsageStatsManager` directly (`UsageReader` + `ForegroundTimeline`), per calendar day; needs `PACKAGE_USAGE_STATS` + `QUERY_ALL_PACKAGES` |
 | Charts | MPAndroidChart 3.1.0 (`HorizontalBarChart` on the dashboard) |
 | Type | Fraunces (headlines, figures) and DM Sans (UI), bundled in `res/font`, both SIL OFL 1.1 (licences in `assets/licenses`) |
 
@@ -135,7 +136,7 @@ subscription-Insight-main/
 │   │   └── SubscriptionBackendApplication.java
 │   ├── src/main/resources/
 │   │   ├── application.yml         # all config, env-overridable
-│   │   └── db/migration/           # V1 … V8
+│   │   └── db/migration/           # V1 … V10
 │   ├── src/test/java/com/yourorg/  # unit + opt-in integration test
 │   ├── docker-compose.yml          # MySQL 8.0 on host port 3308
 │   ├── Jenkinsfile
@@ -188,7 +189,7 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS subscription_db CHARACTER SET
 
 ### 2. Run the backend
 
-Flyway applies V1→V8 on startup; Hibernate then validates every entity against the
+Flyway applies V1→V10 on startup; Hibernate then validates every entity against the
 resulting schema (`ddl-auto: validate`).
 
 ```bash
@@ -255,8 +256,9 @@ steps on the home screen in order:
    to from the installed-app list. See
    [Adding a subscription](#adding-a-subscription-why-the-package-name-is-picked-not-typed)
    for why it is a picker and not a text field.
-3. **Sync your usage** — choose a window; it uploads only the apps you have subscriptions
-   for.
+3. **Sync your usage** — reads the last ten days or so from the phone and uploads them,
+   for the apps you have subscriptions for only. Android keeps about ten days, so sync at
+   least once a week to cover a whole month.
 4. **See what's worth keeping** — the summary card and the per-subscription verdicts.
 
 Steps 2 and 3 are order-dependent in one direction only: adding a subscription after a
@@ -290,7 +292,7 @@ the connector needs it to complete the handshake over a non-TLS local connection
 
 ## Database schema
 
-Five tables. Below is the **final** state after V8 — not the V1 shape.
+Six tables. Below is the **final** state after V10 — not the V1 shape.
 
 ### `users`
 
@@ -330,7 +332,7 @@ Monthly usage, one row per subscription per month.
 | `id` | BIGINT PK AI | |
 | `subscription_id` | BIGINT | FK → `subscriptions(id)` |
 | `period` | VARCHAR(7) | `YYYY-MM` |
-| `usage_count` | INTEGER | **Minutes** of foreground use |
+| `usage_count` | INTEGER | **Minutes** in use — on screen or playing |
 | `observed_window` | VARCHAR(10) NULL | `DAY` / `WEEK` / `MONTH` — which span the scan covered (V8) |
 | `observed_days` | INT NULL | Days of `period` the scan covered (V8) |
 | `month_days_elapsed` | INT NULL | Days elapsed in `period` when the scan was taken (V8) |
@@ -342,7 +344,27 @@ Monthly usage, one row per subscription per month.
 
 The three V8 columns describe **the same observation** as `usage_count` and only move with
 it. All NULL means "written before V8, assume a complete month" — see
-[Sync windows](#sync-windows-and-what-they-mean).
+[Sync windows](#sync-windows-older-clients-only).
+
+For the current app the row is **rebuilt from `usage_days`** on every sync: `usage_count` is
+the sum of the month's recorded days, `observed_days` how many days have a row, and
+`month_days_elapsed` the day of the month (a finished month's full length).
+
+### `usage_days`
+
+Minutes per subscription per calendar day (V9) — what months are built from.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | BIGINT PK AI | |
+| `subscription_id` | BIGINT | FK → `subscriptions(id)` |
+| `usage_date` | DATE | The phone's calendar day |
+| `minutes` | INT | 0–1440, CHECK `ck_usage_days_minutes`. **Zero is a measurement**: scanned, not used |
+| `updated_at` | TIMESTAMP | |
+| | | **UNIQUE (`subscription_id`, `usage_date`)** |
+
+A day with no row was never scanned. That difference is what lets a month with gaps read
+as partial instead of as a month of low usage.
 
 ### `billing_records`
 
@@ -354,7 +376,7 @@ it. All NULL means "written before V8, assume a complete month" — see
 | `currency` | VARCHAR(3) | |
 | `billing_period` | VARCHAR(7) | `YYYY-MM` |
 | `paid_at` | TIMESTAMP | |
-| `payment_method` | VARCHAR(50) | `UPI` / `CARD` / … |
+| `payment_method` | VARCHAR(50) | `AUTO_SYNC` — inferred by the server from the subscription's price |
 | `source` | VARCHAR(50) | |
 | `created_at` | TIMESTAMP | |
 | | | **UNIQUE (`subscription_id`, `billing_period`)** — one bill per period |
@@ -404,13 +426,15 @@ Flyway owns the schema. `baseline-on-migrate: true`, `repair-on-migrate: false`.
 | Version | What it does |
 |---|---|
 | **V1** | Creates all five tables, FKs, `idx_users_email`, and the `(subscription_id, period)` unique key. |
-| **V2** | Seeds 2 users, 3 subscriptions, and sample snapshots / bills / recommendations. |
+| **V2** | Seeds 2 users, 3 subscriptions, and sample snapshots / bills / recommendations. The snapshots and bills were invented; V10 removes them. |
 | **V3** | Adds `subscriptions.package_name` (nullable) + `uk_user_package`; backfills Spotify / YouTube / Netflix package ids. |
 | **V4** | `billing_records.amount` → `DECIMAL(10,2) NOT NULL`. |
 | **V5** | Widens `source` columns to `VARCHAR(50)` so enum names fit. |
 | **V6** | Repairs V1/V2 defects: uppercases categories, backfills and enforces `package_name NOT NULL`, adds `idx_subscriptions_user`, adds the billing period unique key, widens `reason` to 500, adds the six metric columns, adds the `(user_id, subscription_id)` unique key. |
 | **V7** | Re-applies the enum-case fix **unconditionally** and adds CHECK constraints on every enum column. |
 | **V8** | Adds `user_snapshots.observed_window` / `observed_days` / `month_days_elapsed` (all nullable) + a CHECK constraint, so a partial scan is no longer stored as a whole month. No backfill: NULL means "unknown, assume complete", which preserves how existing rows were written. |
+| **V9** | Creates `usage_days` — minutes per subscription per day — because Android keeps only ten days of usage log, so months have to be assembled from days across syncs. |
+| **V10** | Deletes V2's invented usage (180 / 90 / 30 min labelled `ANDROID`), its made-up `UPI` / `CARD` payments, and the seeded verdicts quoting them. Each `DELETE` matches the seed rows exactly, so real rows are never caught. The demo users and subscriptions stay. |
 
 ### Why V7 exists — a worked example of a silent migration failure
 
@@ -554,10 +578,15 @@ with `{"status": "ACTIVE"}` and nothing else.
 
 ```json
 {
-  "period": "MONTH",
   "apps": [
-    { "packageName": "com.spotify.music",  "appName": "Spotify", "usageMinutes": 1240 },
-    { "packageName": "com.netflix.mediaclient", "appName": "Netflix", "usageMinutes": 25 }
+    {
+      "packageName": "com.spotify.music", "appName": "Spotify", "usageMinutes": 245,
+      "days": [ { "date": "2026-10-09", "minutes": 120 }, { "date": "2026-10-10", "minutes": 125 } ]
+    },
+    {
+      "packageName": "com.netflix.mediaclient", "appName": "Netflix", "usageMinutes": 0,
+      "days": [ { "date": "2026-10-09", "minutes": 0 }, { "date": "2026-10-10", "minutes": 0 } ]
+    }
   ]
 }
 ```
@@ -566,24 +595,35 @@ Response:
 
 ```json
 {
-  "period": "2026-08",
+  "period": "2026-10",
   "synced": ["Spotify", "Netflix"],
-  "skipped": ["com.whatsapp"]
+  "skipped": ["com.whatsapp"],
+  "rejected": []
 }
 ```
 
-`period` on the **request** names the span the device scanned — `TODAY`, `WEEK`, or `MONTH`
-— and is matched case-insensitively after trimming. Absent or unrecognised values are read
-as `MONTH`, so an older client is accepted rather than rejected. It determines the coverage
-recorded alongside the minutes, which is what stops a one-day scan from being read as a
-whole month; see [Sync windows](#sync-windows-and-what-they-mean). `period` on the
-**response** is the storage key, `YYYY-MM` — always the current month, since that is the
-row the figures are filed under.
+`days` is the measurement: minutes for every calendar day the phone could fully account
+for, **zeros included** — a day the app sat unused is a fact, not a gap. Each day is stored
+in `usage_days` and every month the days fall in is rebuilt from them; see
+[Usage sync semantics](#usage-sync-semantics). `usageMinutes` is only their total.
+
+An app's days are **all rejected** if any one of them is impossible: a date more than a
+day after the server's today, minutes outside 0–1440, or a malformed or repeated date. (One
+day ahead is a phone in a later time zone; that day is accepted but only stored once the
+server reaches it.) It is listed under `rejected` and
+nothing of it is stored.
+
+Older clients send a single `usageMinutes` and no `days`, with `period` naming the span they
+scanned — `TODAY`, `WEEK` or `MONTH`, case-insensitive; absent or unrecognised reads as
+`MONTH`. That path still works (see [Sync windows](#sync-windows-older-clients-only)) and is
+now checked too: a negative total, or one larger than the window's days × 1440, is rejected
+rather than stored. Negatives used to be clamped to zero, which turned a broken report into
+"not used at all". `period` on the **response** is the current month, `YYYY-MM`.
 
 The `userId` is never read from the body — it comes from the token. It used to be, which
 meant anyone could post usage into any account by changing a number. (The field still
 exists on `UsageRequest` for wire compatibility with older clients; the controller ignores
-it.) `synced` / `skipped` exist because the old handler answered
+it.) `synced` / `skipped` / `rejected` exist because the old handler answered
 `"Usage synced successfully"` even when it matched nothing.
 
 ### `GET /api/dashboard/{userId}`
@@ -760,24 +800,45 @@ Dividing by a 4-decimal approximation of ⅓ h turned an exact `1947.00` into `1
 
 ## Usage sync semantics
 
-1. The device measures foreground time over a calendar-aligned window and reports
-   `{ packageName, appName, usageMinutes }` per app, plus the `period` naming the window it
-   scanned. See [Sync windows](#sync-windows-and-what-they-mean).
+1. The phone reads Android's usage log and reports, per subscribed app that is installed,
+   the minutes it was in use on each calendar day it can fully account for — about the
+   last ten. See [How usage is measured](#how-usage-is-measured).
 2. The backend matches `packageName` against the caller's `subscriptions.package_name`,
    falling back to `providerName` vs `appName` only if no package name was sent.
-3. Matches upsert a `user_snapshots` row for the current `YYYY-MM`, keyed by the
-   `(subscription_id, period)` unique constraint — so **repeated syncs merge rather than
-   duplicate** — recording how much of the month the winning observation covered.
-4. Billing records are generated, one per `(subscription_id, billing_period)`.
-5. Recommendations are regenerated and upserted, one per `(user_id, subscription_id)`.
-6. The response lists what was `synced` and what was `skipped`.
+3. Each day is upserted into `usage_days`, keyed by `(subscription_id, usage_date)`. A day
+   seen before keeps the larger figure: a finished day reads the same on every scan, today
+   only grows, and a scan that has lost part of a day to pruning cannot erase it.
+4. For every month the days fall in, the `user_snapshots` row is **rebuilt from the days**:
+   the sum of their minutes, how many of the month's days have a row, and how many days
+   the month has had. A month with gaps therefore reads as partial.
+5. Billing records are generated, one per `(subscription_id, billing_period)`.
+6. Recommendations are regenerated and upserted, one per `(user_id, subscription_id)`.
+7. The response lists what was `synced`, `skipped` and `rejected`.
 
-Unmatched apps are **skipped, not an error**. A phone reports every app; only a handful
-correspond to subscriptions. An earlier version threw on the first unmatched app, which
-failed the whole batch because one entry in the list happened not to be a subscription.
+Unmatched apps are **skipped, not an error**. An earlier version threw on the first
+unmatched app, which failed the whole batch because one entry in the list happened not to
+be a subscription.
 
-### Why usage is merged with `max()`, not `+=` or `=`
+### Why months are built from days
 
+Android deletes its detailed usage log after **ten days**: `UsageStatsDatabase.prune()`
+drops `INTERVAL_DAILY` files older than `addDays(-10)` (AOSP `android14-release`), and
+`queryEvents()` reads exactly those files. No query, however it is phrased, can see further
+back, so one scan cannot describe a month. Each sync reports the days it can see, the
+server keeps them, and a month fills in across syncs.
+
+**Syncing at least once a week leaves no gaps.** A gap is never guessed at: it makes the
+month partial, and the engine does not return `CANCEL` on a partial month — it says
+`CONSIDER` and tells the user to sync weekly.
+
+Month-over-month trends compare **daily rates**, and only against a previous month that
+was seen in full: ten days of this month against ten days' worth of last month, not all
+thirty (which read as a steep fall every month), and no trend at all against a month
+with gaps (which once produced "up 925%" against a single recorded day).
+
+### Single totals from older clients: why they merge with `max()`
+
+An older client sends one total for a window instead of days. For those,
 `UserSnapShotService` stores `max(existing, reported)`. Each of the alternatives is wrong:
 
 - **`+=`** would double-count. The device reports the *total* for the window, not the delta
@@ -860,7 +921,7 @@ Intent launcher = new Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGO
 for (ResolveInfo ri : pm.queryIntentActivities(launcher, 0)) { … }   // deduped by package
 ```
 
-The stored package is therefore the same string `AppsUsageMonitorAPI` will later report,
+The stored package is therefore the same string Android's usage log will later report,
 by construction rather than by validation. This is the Gap 2 fix one layer earlier: the
 sync stopped guessing which apps to report by deriving the list from the user's
 subscriptions, and the add form stops the subscription being created with a package the
@@ -914,75 +975,56 @@ this client has no per-field edit form.
 
 ### How usage is measured
 
-Not by calling `UsageStatsManager` directly. `MainActivity` implements
-`bot.box.appusage.contract.UsageContracts.View` and delegates to the JitPack library
-`com.github.TheBotBox:AppsUsageMonitorAPI:1.1`:
+`UsageReader` asks `UsageStatsManager` directly. The app used to go through
+`com.github.TheBotBox:AppsUsageMonitorAPI:1.1`, whose "this month" scan called
+`queryEvents(INTERVAL_MONTHLY, now)`. `INTERVAL_MONTHLY` is the constant `2`, so the scan
+started in 1970 and returned whatever the phone still held — about ten days late in a
+month, and last month's days early in it — which the server then filed as the whole
+month. It also counted screen time only.
 
-```java
-Monitor.scan().getAppLists(this).fetchFor(Duration.MONTH);   // async
-// → callback: getUsageData(List<AppData> usageData, long mTotalUsage, int duration)
-```
+A sync:
 
-Each `AppData` carries `mPackageName` and `mUsageTime` in **milliseconds** of foreground
-time. The client converts and floors:
+1. finds where the phone's log begins — the oldest daily bucket
+   `queryUsageStats(INTERVAL_DAILY, …)` still returns — and starts at the first **whole**
+   local day after that, or at the 1st of last month if the log reaches that far. The
+   oldest day is usually cut off partway, so it is left out rather than reported short;
+2. replays `queryEvents(firstDay, now)` through `ForegroundTimeline`, which turns the
+   events into time in use per app per day;
+3. sends every covered day for each subscription whose app is installed, **zeros
+   included**. An app that is not installed is not sent: the phone knows nothing about it.
 
-```java
-long mins = data.mUsageTime / 60000;
-long finalMins = (data.mUsageTime > 0 && mins == 0) ? 1 : mins;
-```
+It runs on a background thread; walking ten days of events is slow enough to stall the
+screen.
 
-The floor is deliberate. Zero minutes is a `CANCEL` trigger at 0.95 confidence, so
-truncating 40 seconds of real use to `0` would manufacture a cancel recommendation out of
-a rounding artefact. Reporting 1 keeps "barely used" distinct from "never opened".
+`ForegroundTimeline` counts an app as **in use** while either of these holds:
 
-### Sync windows and what they mean
-
-Sync opens a dialog offering three windows, which map to library constants. These are
-**calendar-aligned**, not rolling — confirmed against `UsageUtils` in the library, which
-zeroes hour/minute/second/millisecond after pinning the start field:
-
-| Dialog option | `Duration` | Window |
+| | Starts | Ends |
 |---|---|---|
-| This Month (recommended) | `MONTH` | `DAY_OF_MONTH = 1`, time zeroed → **1st of this month 00:00 → now** |
-| This Week (provisional) | `WEEK` | `DAY_OF_WEEK = MONDAY`, time zeroed → Monday 00:00 → now |
-| Today (provisional) | `TODAY` | today 00:00 → now |
+| An activity is on screen | `ACTIVITY_RESUMED` | `ACTIVITY_STOPPED` on Android 10+, so picture-in-picture and split screen still count; `ACTIVITY_PAUSED` before that |
+| It runs a foreground service | `FOREGROUND_SERVICE_START` | `FOREGROUND_SERVICE_STOP` |
 
-The month leads the list because it is the only window that covers a whole billing period,
-and therefore the only one the server can turn into a firm verdict. The "(provisional)"
-labels are on the other two so the choice is informed rather than a guess between three
-equal-looking options. (The hint lives in the labels because `AlertDialog` hides
-`setMessage` once `setItems` supplies a list adapter.)
+The second row is what makes music real: Spotify plays through a foreground service, so
+with the screen off it used to read as barely used. The two are combined as a **union**,
+so playing while watching is not counted twice. Screen-off ends on-screen time (playback
+carries on); a shutdown ends everything; a startup with no recorded shutdown — a flat
+battery — ends everything at the last moment the phone was known to be on. Spans are cut
+at local midnight. Service events only exist from Android 10, so on older phones only
+screen time is counted, and the dashboard caption says which applies.
 
-`Duration.MONTH` means exactly what `YearMonth.now()` means on the server — the two agree
-precisely. And because `TODAY ⊆ WEEK ⊆ MONTH` within a month, a shorter scan can only ever
-report a smaller number, which is why the server merges with `max(existing, reported)`
-instead of assigning or adding.
+Minutes are rounded per day, and any use at all is at least one minute: zero is a
+`CANCEL` signal, so rounding forty seconds down would invent one.
 
-#### The window is recorded, and short scans read as a lower bound
+`ForegroundTimeline` is plain Java with no Android types, tested on the JVM by
+`app/src/test/.../ForegroundTimelineTest`.
 
-`UsageRequest.period` is not decorative. `UsageController` passes it to
-`UserSnapShotService`, which resolves it through `UsageWindow.fromClient` and stores three
-columns next to the minutes: `observed_window`, `observed_days`, and `month_days_elapsed`.
-`observed_days` is the window's overlap with **this** month, clamped to the 1st, so a
-Monday-anchored week reaching into the previous month still reports an in-month count.
+### Sync windows (older clients only)
 
-Coverage is `observed_days / month_days_elapsed`. When it is below 1, the engine reads the
-minutes as *at least* that much rather than as the month's total, and will **never** return
-`CANCEL` — the worst it will say is `CONSIDER`, with confidence scaled by coverage. A
-"Today" scan on the 8th of August that finds no Netflix use yields *"Based on a partial scan
-covering 1 of 8 days elapsed in 2026-08…"*, not a confident cancel off one day.
-
-So all three options are now safe to pick. "This Month" is still the one that produces a
-definite answer; the shorter windows are useful spot checks that can confirm good value
-(heavy use over three days already justifies the price) but can never condemn a
-subscription on their own.
-
-> **`WEEK` can still straddle a month boundary.** Monday-anchored means that in a week
-> spanning the 1st, minutes actually spent in the previous month are filed under the
-> current one. Left as-is deliberately: over-counting usage biases toward `KEEP`, and
-> inflated usage can never manufacture a false `CANCEL`. The clamp also has a pleasant
-> side effect — early in a month a day or week scan can legitimately cover the entire
-> elapsed month, and is then correctly treated as complete.
+A report that carries one total instead of days names the window it scanned — `TODAY`,
+`WEEK` (Monday-anchored) or `MONTH` (1st-anchored). `UsageWindow` turns that into
+`observed_days` / `month_days_elapsed`, clamped to the current month, so a short scan is
+read as *at least* that much rather than as the month's total, and the engine will not
+return `CANCEL` on it. The current app sends days and no window. A `MONTH` total from the
+old library could not be trusted in either direction, for the reason above.
 
 ### What gets reported: the subscription-derived filter
 
@@ -991,23 +1033,29 @@ sync calls `GET /api/subscriptions` first and collects two lowercase sets — ev
 `packageName` and every `providerName` — then starts the scan:
 
 ```java
-boolean isTracked =
-        (data.mPackageName != null
-                && trackedPackages.contains(data.mPackageName.trim().toLowerCase(Locale.ROOT)))
-        || trackedProviderNames.contains(appLabel.trim().toLowerCase(Locale.ROOT));
+for (Map.Entry<String, String> tracked : trackedPackages.entrySet()) {   // 1: by package
+    String label = installedLabel(pm, pkg);
+    if (label != null) toReport.put(pkg, label);                          // installed: report it
+}
+for (String pkg : report.usedPackages()) {                               // 2: by label
+    String label = installedLabel(pm, pkg);
+    if (label != null && trackedProviderNames.contains(label.trim().toLowerCase(Locale.ROOT))) {
+        toReport.put(pkg, label);
+    }
+}
 ```
 
 The two tiers mirror the server's own matching in `resolveSubscription`: package name
 first, because it is a stable OS identifier, then the display label for subscriptions whose
 `package_name` is unset.
 
-The fetch has to finish before the scan starts, because `getUsageData` **is** the scan's
-callback and needs the sets to decide what to report. Kicking off both at once would race.
+The fetch has to finish before the scan starts, because the scan's result is filtered
+against those sets. Kicking off both at once would race.
 If the fetch fails the sync is abandoned with *"Couldn't load your subscriptions; sync
 cancelled."* It deliberately does **not** fall back to reporting every installed app: that
 would send the user's entire app-usage profile over the wire — in cleartext, on this build
 — to work around a matching problem. An empty subscription list stops just as early, with
-*"Add a subscription first, then sync."*
+*"No subscriptions yet. Add one in step 2, then sync."*
 
 This replaced a hardcoded nine-name allow-list, which dropped every other app *before the
 request was sent*, so a subscription for anything outside those nine could never sync
@@ -1103,7 +1151,7 @@ A trailing `/` is appended if missing, because Retrofit requires one.
 | Permission | Why |
 |---|---|
 | `INTERNET` | Talk to the backend |
-| `PACKAGE_USAGE_STATS` | Read foreground time. **Special-access** — see below |
+| `PACKAGE_USAGE_STATS` | Read the usage log. **Special-access** — see below |
 | `QUERY_ALL_PACKAGES` | Android 11+ package visibility. Without it, `getApplicationLabel()` cannot resolve other apps' names, so Spotify/Netflix are invisible to the label lookup |
 
 `PACKAGE_USAGE_STATS` cannot be granted by a runtime dialog. The user must enable it in
@@ -1130,10 +1178,12 @@ cd Backend && ./mvnw test
 | Test | Count | Needs a DB? |
 |---|---|---|
 | `RecommendationEngineTest` | 23 | No — always runs |
+| `DailyUsageTest` | 14 | No — always runs |
 | `UsageWindowTest` | 8 | No — always runs |
 | `SubscriptionBackendApplicationTests` | 1 | **Yes** — skipped unless `INTEGRATION_DB` is set |
 
-32 tests, 31 of which need nothing but a JVM. Both unit suites test pure functions —
+46 tests, 45 of which need nothing but a JVM. On the app side, `ForegroundTimelineTest`
+(12 tests, `./gradlew :app:testDebugUnitTest`) covers how usage events become minutes. Both unit suites test pure functions —
 `RecommendationEngine` maps `UsageFacts → Verdict`, `UsageWindow` maps a window plus a date
 to a day count — so neither needs Spring or MySQL, and both run in the Jenkins pipeline
 as-is.
@@ -1151,7 +1201,7 @@ pre-V8 row still cancels, so the change is additive rather than a behaviour flip
 
 The integration test is opt-in via
 `@EnabledIfEnvironmentVariable(named = "INTEGRATION_DB", matches = ".+")`. It is worth
-running because it opens a real DataSource, applies Flyway V1→V8, and has Hibernate
+running because it opens a real DataSource, applies Flyway V1→V10, and has Hibernate
 `validate` every entity against the actual schema — catching entity/column mismatches no
 unit test can. But it cannot pass without MySQL, and `mvnw test` is what the Jenkins
 pipeline runs, so leaving it unconditional meant **the pipeline failed for a missing
@@ -1304,16 +1354,24 @@ Development defaults that **must** change before any real deployment:
 - **`usage_count` is minutes** despite the column name — a V1 naming choice kept to avoid
   a rename migration for no functional gain.
 - **Billing is generated, not reconciled.** Records derive from subscription price, not
-  from real payment data.
+  from real payment data, and are marked `AUTO_SYNC` / `SYSTEM` to say so.
 - **One recommendation per (user, subscription)** — current state only, no history.
 - **No refresh tokens.** A 10-hour JWT expires and the user logs in again.
-- **A `WEEK` scan spanning the 1st over-counts.** Monday-anchored windows can include
-  minutes spent in the previous month. Left alone deliberately: inflated usage biases
-  toward `KEEP` and can never produce a false `CANCEL`. See
-  [Sync windows](#sync-windows-and-what-they-mean).
-- **Coverage is not backfilled.** Rows written before V8 have no window recorded and are
-  read as complete, which is what they were — but a row written by an old client during a
-  partial scan is indistinguishable from a full month. Re-syncing fixes it.
+- **Only this phone is measured.** Watching Netflix on a TV or laptop is invisible to it,
+  so a subscription used mainly elsewhere can look unused. The dashboard says so.
+- **Background playback needs Android 10.** Below that, only on-screen time is counted.
+- **A month is only complete if it is synced at least weekly.** Android keeps ten days of
+  usage; days that age out unsynced leave a gap, and the month stays partial (`CONSIDER`,
+  never `CANCEL`).
+- **Days are the phone's calendar days.** A day the server has not reached yet (the phone is
+  a time zone ahead) is accepted but not counted until it has; more than a day ahead is
+  rejected. Running both in the same time zone avoids the lag.
+- **An always-on service is invisible until it restarts.** Playback is counted from a
+  foreground service's start and stop events; one that ran unbroken for longer than the
+  ten-day log (an always-connected VPN) has neither in range.
+- **Figures from before this change are not recomputed.** A month already stored from the
+  old library's single total is replaced once day-based syncs reach it; until then it
+  stands. Rows written before V8 have no window recorded and are read as complete.
 - **The app can change a subscription's status, not its fields.** Price, category, cycle
   and dates are set at creation and afterwards only `PUT /api/subscriptions/{id}` can
   change them — which the app calls with a status-only body. Correcting a price means the

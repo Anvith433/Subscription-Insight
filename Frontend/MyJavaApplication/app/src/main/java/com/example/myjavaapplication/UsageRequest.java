@@ -10,13 +10,9 @@ public class UsageRequest {
     @SerializedName("apps")
     private List<AppUsageInfo> apps;
 
-    @SerializedName("period")
-    private String period;
-
-    public UsageRequest(Long userId, List<AppUsageInfo> apps, String period) {
+    public UsageRequest(Long userId, List<AppUsageInfo> apps) {
         this.userId = userId;
         this.apps = apps;
-        this.period = period;
     }
 
     public Long getUserId() { return userId; }
@@ -24,7 +20,4 @@ public class UsageRequest {
     
     public List<AppUsageInfo> getApps() { return apps; }
     public void setApps(List<AppUsageInfo> apps) { this.apps = apps; }
-
-    public String getPeriod() { return period; }
-    public void setPeriod(String period) { this.period = period; }
 }

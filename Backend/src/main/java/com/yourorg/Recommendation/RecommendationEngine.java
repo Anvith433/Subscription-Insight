@@ -181,8 +181,9 @@ public class RecommendationEngine {
                     Type.CONSIDER,
                     trim("Based on a partial scan covering " + coverageText + ". Used at least "
                             + usageText + " so far, which would not justify " + money
-                            + "/month on its own - but a scan this short cannot rule the rest of "
-                            + "the month out. Sync a full month for a firm recommendation." + trend),
+                            + "/month on its own - but the days not recorded yet cannot be ruled "
+                            + "out. Android keeps only about ten days of usage, so syncing at least "
+                            + "once a week covers the whole month." + trend),
                     partialConfidence(f, trendDirection),
                     score, costPerHour, BigDecimal.ZERO);
         }

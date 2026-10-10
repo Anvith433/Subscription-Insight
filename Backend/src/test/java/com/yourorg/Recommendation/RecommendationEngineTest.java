@@ -272,7 +272,7 @@ class RecommendationEngineTest {
         assertEquals(Type.CONSIDER, v.type());
         assertTrue(v.confidence().compareTo(new BigDecimal("0.40")) < 0, "confidence " + v.confidence());
         assertTrue(v.reason().contains("at least"), v.reason());
-        assertTrue(v.reason().contains("Sync a full month"), v.reason());
+        assertTrue(v.reason().contains("once a week"), v.reason());
         assertEquals(0, v.estimatedMonthlySavings().compareTo(BigDecimal.ZERO));
         // The metrics are still reported -- they are real, just measured over less time.
         assertEquals(0, v.costPerHour().compareTo(new BigDecimal("597.00")));

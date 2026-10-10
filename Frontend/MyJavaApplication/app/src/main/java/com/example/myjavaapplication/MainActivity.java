@@ -25,21 +25,20 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
-import bot.box.appusage.contract.UsageContracts;
-import bot.box.appusage.handler.Monitor;
-import bot.box.appusage.model.AppData;
-import bot.box.appusage.utils.Duration;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements UsageContracts.View {
+public class MainActivity extends AppCompatActivity {
 
     private TextInputEditText etEmail, etPassword, etActualUsername, etConfirmPassword;
     private TextInputLayout tilActualUsername, tilConfirmPassword, tilEmail;
@@ -56,7 +55,6 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
     // wrong-but-plausible id is worse than no id, because nothing ever fails visibly.
     private Long loggedInUserId = null;
     private String jwtToken = "";
-    private String selectedPeriod = "WEEK";
 
     // What to report to the server, refreshed from GET /api/subscriptions immediately
     // before each scan. This replaced a hardcoded list of nine provider names, which
@@ -64,8 +62,9 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
     // outside those nine could never sync, however correctly the server matched it.
     // Deriving the filter from the user's own subscriptions is also the more private
     // arrangement: only packages the user has told us about ever leave the device.
-    // Lowercased on insert, because both server-side lookups are case-insensitive.
-    private final Set<String> trackedPackages = new HashSet<>();
+    // Keyed lowercased, because both server-side lookups are case-insensitive; the
+    // package map keeps the name as stored, which is what PackageManager is asked about.
+    private final Map<String, String> trackedPackages = new HashMap<>();
     private final Set<String> trackedProviderNames = new HashSet<>();
 
     @Override
@@ -129,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
 
         btnSync.setOnClickListener(v -> {
             if (checkUsagePermission()) {
-                showSyncOptions();
+                loadSubscriptionsThenScan();
             } else {
                 showPermissionDeniedDialog();
             }
@@ -159,46 +158,23 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
         }
     }
 
-    private void showSyncOptions() {
-        // The month comes first and is the recommendation. It is the only window that
-        // covers a whole billing period, so it is the only one the server can turn into
-        // a firm verdict; the other two are labelled so the choice is informed rather
-        // than a guess between three equal-looking options. The previous order put
-        // "Today's Usage" first, which made the least useful scan the easiest to pick.
-        String[] options = {"This Month (recommended)", "This Week (provisional)", "Today (provisional)"};
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Sync which period?")
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            selectedPeriod = "MONTH";
-                            loadSubscriptionsThenScan(Duration.MONTH);
-                            break;
-                        case 1:
-                            selectedPeriod = "WEEK";
-                            loadSubscriptionsThenScan(Duration.WEEK);
-                            break;
-                        case 2:
-                            selectedPeriod = "TODAY";
-                            loadSubscriptionsThenScan(Duration.TODAY);
-                            break;
-                    }
-                }).show();
-    }
-
     /**
-     * Fetches the user's subscriptions, then starts the device scan.
+     * Fetches the user's subscriptions, then reads the phone's usage log.
      *
-     * <p>The order matters and is not incidental: {@link #getUsageData} runs as the
-     * scan's callback and needs the subscription sets to decide what to report, so the
-     * fetch has to have completed by then. Kicking off both at once would race.
+     * <p>The order matters and is not incidental: {@link #sendUsage} needs the
+     * subscription sets to decide what to report, so the fetch has to have completed
+     * first. Kicking off both at once would race.
+     *
+     * <p>There is no period to choose. Each sync reports every day the phone can still
+     * account for -- about the last ten -- and the server builds months out of days, so
+     * syncing at least weekly covers a month with no gaps.
      *
      * <p>If the fetch fails, the sync is abandoned. It deliberately does not fall back
      * to reporting every installed app and letting the server sort them out: that would
      * send the user's entire app-usage profile over the wire -- in cleartext, on this
      * build -- to work around a matching problem.
      */
-    private void loadSubscriptionsThenScan(int duration) {
+    private void loadSubscriptionsThenScan() {
         if (!isLoggedIn || loggedInUserId == null) {
             Toast.makeText(this, "Please Login First!", Toast.LENGTH_SHORT).show();
             return;
@@ -230,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
                 for (SubscriptionResponse sub : subs) {
                     String pkg = sub.getPackageName();
                     if (pkg != null && !pkg.trim().isEmpty()) {
-                        trackedPackages.add(pkg.trim().toLowerCase(Locale.ROOT));
+                        trackedPackages.put(pkg.trim().toLowerCase(Locale.ROOT), pkg.trim());
                     }
                     String provider = sub.getProviderName();
                     if (provider != null && !provider.trim().isEmpty()) {
@@ -240,7 +216,33 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
                 Log.i("USAGE_SYNC", "Filtering against " + trackedPackages.size() + " package(s) and "
                         + trackedProviderNames.size() + " provider name(s)");
 
-                Monitor.scan().getAppLists(MainActivity.this).fetchFor(duration);
+                Toast.makeText(MainActivity.this, "Reading usage on this phone...", Toast.LENGTH_SHORT).show();
+                // Walking ten days of the usage log is slow enough to stall the screen, so
+                // it runs off the main thread, as the app list in AddSubscriptionActivity does.
+                final Context appContext = getApplicationContext();
+                new Thread(() -> {
+                    UsageReader.Report read;
+                    try {
+                        read = UsageReader.read(appContext);
+                    } catch (RuntimeException e) {
+                        // Without this a failure would end the thread silently and the
+                        // user would wait for a result that never comes.
+                        Log.e("USAGE_SYNC", "Could not read usage: " + e.getMessage());
+                        read = null;
+                    }
+                    final UsageReader.Report report = read;
+                    runOnUiThread(() -> {
+                        if (isFinishing()) {
+                            return;
+                        }
+                        if (report == null) {
+                            Toast.makeText(MainActivity.this, "Couldn't read usage on this phone; sync cancelled.",
+                                    Toast.LENGTH_LONG).show();
+                        } else {
+                            sendUsage(report);
+                        }
+                    });
+                }).start();
             }
 
             @Override
@@ -252,102 +254,119 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
         });
     }
 
-    @Override
-    public void getUsageData(List<AppData> usageData, long mTotalUsage, int duration) {
-        if (usageData != null && !usageData.isEmpty()) {
-            if (!isLoggedIn || loggedInUserId == null) {
-                Toast.makeText(this, "Please Login First!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            List<AppUsageInfo> cleanList = new ArrayList<>();
-            PackageManager pm = getPackageManager();
-
-            for (AppData data : usageData) {
-                try {
-                    String appLabel = pm.getApplicationLabel(pm.getApplicationInfo(data.mPackageName, 0)).toString();
-
-                    // Mirrors the server's own two-tier match: package name first,
-                    // because it is a stable OS identifier, then the display label as a
-                    // fallback for subscriptions whose package_name is unset.
-                    //
-                    // The label is no longer rewritten to a canonical name. The old code
-                    // did `appLabel = tracked` on a substring hit, and because "YouTube"
-                    // preceded "YouTube Premium" in the list, com.google.android.youtube
-                    // was always relabelled plain "YouTube" -- which is not the provider
-                    // name the fallback lookup needs. Sending the device's real label
-                    // means the two tiers stay independent.
-                    boolean isTracked =
-                            (data.mPackageName != null
-                                    && trackedPackages.contains(
-                                            data.mPackageName.trim().toLowerCase(Locale.ROOT)))
-                            || trackedProviderNames.contains(appLabel.trim().toLowerCase(Locale.ROOT));
-
-                    if (isTracked) {
-                        long mins = data.mUsageTime / 60000;
-                        // Never round a used app down to zero: the server reads zero
-                        // minutes as a cancel signal, so truncating 40 seconds would
-                        // fabricate one.
-                        long finalMins = (data.mUsageTime > 0 && mins == 0) ? 1 : mins;
-
-                        // The package name is sent alongside the label so the server can
-                        // match on the stable OS identifier. The label is still sent as a
-                        // fallback for subscriptions whose package_name column is unset.
-                        cleanList.add(new AppUsageInfo(data.mPackageName, appLabel, finalMins));
-                        Log.i("USAGE_SYNC", "Adding Tracked App: " + appLabel
-                                + " (" + data.mPackageName + ") | " + finalMins + "m");
-                    }
-                } catch (Exception e) {
-                    // Skip if error
-                }
-            }
-
-            if (cleanList.isEmpty()) {
-                Toast.makeText(this, "None of your subscriptions were used in this period.", Toast.LENGTH_LONG).show();
-                return;
-            }
-
-            UsageRequest request = new UsageRequest(loggedInUserId, cleanList, selectedPeriod);
-            apiService.syncUsage("Bearer " + jwtToken, request).enqueue(new Callback<UsageSyncResponse>() {
-                @Override
-                public void onResponse(Call<UsageSyncResponse> call, Response<UsageSyncResponse> response) {
-                    if (!response.isSuccessful()) {
-                        Toast.makeText(MainActivity.this, "Sync Failed: " + response.code(), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    UsageSyncResponse body = response.body();
-                    if (body == null) {
-                        Toast.makeText(MainActivity.this, "Sync Successful!", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    // A 200 with nothing matched is the usual real failure -- an app whose
-                    // name matches no subscription -- so it is reported as such rather
-                    // than as unqualified success.
-                    if (body.getSyncedCount() == 0) {
-                        Toast.makeText(MainActivity.this,
-                                "Nothing synced: none of these apps match a subscription.",
-                                Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(MainActivity.this,
-                                "Synced " + body.getSyncedCount() + " subscription(s) for "
-                                        + body.getPeriod()
-                                        + (body.getSkippedCount() > 0
-                                                ? " (" + body.getSkippedCount() + " app(s) not tracked)"
-                                                : ""),
-                                Toast.LENGTH_LONG).show();
-                    }
-                    Log.i("USAGE_SYNC", "synced=" + body.getSynced() + " skipped=" + body.getSkipped());
-                }
-                @Override
-                public void onFailure(Call<UsageSyncResponse> call, Throwable t) {
-                    Toast.makeText(MainActivity.this, "Laptop unreachable", Toast.LENGTH_SHORT).show();
-                }
-            });
+    /**
+     * Sends, for each subscription whose app is on this phone, its minutes on every day
+     * the scan covered.
+     *
+     * <p>Days with no use are sent as zeros. "Installed and not opened all week" is
+     * exactly what a verdict needs to know; leaving those days out made an unused
+     * subscription read as "no data" on the server rather than as unused. An app that
+     * is not installed is not sent at all: this phone can say nothing about it.
+     *
+     * <p>Matching mirrors the server's own two tiers: package name first, because it is
+     * a stable OS identifier, then the app's label for subscriptions whose package name
+     * is unset. The label is sent as the device shows it, never rewritten to a provider
+     * name, so the two tiers stay independent.
+     */
+    private void sendUsage(UsageReader.Report report) {
+        if (!isLoggedIn || loggedInUserId == null) {
+            Toast.makeText(this, "Please Login First!", Toast.LENGTH_SHORT).show();
+            return;
         }
+        if (report.isEmpty()) {
+            Toast.makeText(this, "Android hasn't recorded any usage to read yet. Try again later.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        PackageManager pm = getPackageManager();
+        Map<String, String> usedByKey = new HashMap<>();
+        for (String pkg : report.usedPackages()) {
+            usedByKey.put(pkg.toLowerCase(Locale.ROOT), pkg);
+        }
+
+        // package -> label, in the order they will be sent
+        Map<String, String> toReport = new LinkedHashMap<>();
+        for (Map.Entry<String, String> tracked : trackedPackages.entrySet()) {
+            String pkg = usedByKey.containsKey(tracked.getKey()) ? usedByKey.get(tracked.getKey()) : tracked.getValue();
+            String label = installedLabel(pm, pkg);
+            if (label != null) {
+                toReport.put(pkg, label);
+            }
+        }
+        for (String pkg : report.usedPackages()) {
+            if (toReport.containsKey(pkg) || trackedPackages.containsKey(pkg.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            String label = installedLabel(pm, pkg);
+            if (label != null && trackedProviderNames.contains(label.trim().toLowerCase(Locale.ROOT))) {
+                toReport.put(pkg, label);
+            }
+        }
+
+        if (toReport.isEmpty()) {
+            Toast.makeText(this, "None of your subscriptions' apps are installed on this phone, "
+                    + "so there is nothing here to measure.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        List<AppUsageInfo> apps = new ArrayList<>();
+        for (Map.Entry<String, String> app : toReport.entrySet()) {
+            List<AppUsageInfo.Day> days = new ArrayList<>();
+            for (String day : report.days) {
+                days.add(new AppUsageInfo.Day(day, report.minutes(app.getKey(), day)));
+            }
+            AppUsageInfo info = new AppUsageInfo(app.getKey(), app.getValue(), days);
+            apps.add(info);
+            Log.i("USAGE_SYNC", "Reporting " + app.getValue() + " (" + app.getKey() + "): "
+                    + info.getUsageMinutes() + " min over " + days.size() + " day(s)");
+        }
+
+        final int dayCount = report.days.size();
+        apiService.syncUsage("Bearer " + jwtToken, new UsageRequest(loggedInUserId, apps))
+                .enqueue(new Callback<UsageSyncResponse>() {
+            @Override
+            public void onResponse(Call<UsageSyncResponse> call, Response<UsageSyncResponse> response) {
+                if (!response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, "Sync failed: " + response.code(), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                UsageSyncResponse body = response.body();
+                if (body == null) {
+                    Toast.makeText(MainActivity.this, "Synced.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                // A 200 with nothing stored is a real failure -- an app whose name
+                // matches no subscription, or figures the server refused -- so it is
+                // reported as such rather than as unqualified success.
+                int synced = body.getSyncedCount();
+                String message = synced == 0
+                        ? "Nothing synced: none of these apps match a subscription."
+                        : "Synced " + synced + (synced == 1 ? " subscription" : " subscriptions")
+                                + " across " + (dayCount == 1 ? "today" : dayCount + " days") + ".";
+                if (body.getRejectedCount() > 0) {
+                    message += " " + body.getRejectedCount() + " had figures the server could not accept.";
+                }
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+                Log.i("USAGE_SYNC", "synced=" + body.getSynced() + " skipped=" + body.getSkipped()
+                        + " rejected=" + body.getRejectedCount());
+            }
+
+            @Override
+            public void onFailure(Call<UsageSyncResponse> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "Laptop unreachable", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    @Override public void showProgress() {}
-    @Override public void hideProgress() {}
+    /** The app's label if it is installed on this phone, otherwise null. */
+    private static String installedLabel(PackageManager pm, String packageName) {
+        try {
+            return pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString();
+        } catch (PackageManager.NameNotFoundException e) {
+            return null;
+        }
+    }
 
     private void performSignup() {
         if (etActualUsername.getText() == null || etEmail.getText() == null || etPassword.getText() == null || etConfirmPassword.getText() == null) return;
