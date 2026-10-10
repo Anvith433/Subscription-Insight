@@ -11,6 +11,12 @@ import com.yourorg.Users.CurrentUserService;
 /**
  * Receives app-usage figures measured on the device.
  *
+ * <p>The body is {@code {"apps": [...]}}. Each app carries either {@code days} -- minutes
+ * for every calendar day the phone could see, which is what the current app sends --
+ * or, from older clients, a single {@code usageMinutes} total for the window named in
+ * {@code period}. Figures that cannot be true are rejected rather than stored, and the
+ * response lists them.
+ *
  * <p>Three changes from the previous version:
  *
  * <ul>

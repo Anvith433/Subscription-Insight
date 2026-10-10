@@ -17,8 +17,10 @@ import java.time.YearMonth;
  * @param usageMinutes          minutes used during {@code period}; {@code null}
  *                              means no snapshot exists, which is different from
  *                              a recorded zero
- * @param priorUsageMinutes     minutes used in the month before {@code period},
- *                              or {@code null} when there is no history
+ * @param priorUsageMinutes     minutes used in the month before {@code period}, scaled
+ *                              to the number of days {@code usageMinutes} covers so the
+ *                              trend compares daily rates; {@code null} when there is
+ *                              no history or that month was not seen in full
  * @param lastUsedAt            timestamp of the last observed use, may be null
  * @param startDate             when the subscription began
  * @param period                the month being assessed

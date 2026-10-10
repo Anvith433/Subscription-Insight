@@ -26,11 +26,17 @@ public class UsageSyncResponse {
     @SerializedName("skipped")
     private List<String> skipped;
 
+    /** Subscriptions whose figures the server judged impossible and did not store. */
+    @SerializedName("rejected")
+    private List<String> rejected;
+
     public String getPeriod() { return period; }
 
     public int getSyncedCount() { return synced == null ? 0 : synced.size(); }
 
     public int getSkippedCount() { return skipped == null ? 0 : skipped.size(); }
+
+    public int getRejectedCount() { return rejected == null ? 0 : rejected.size(); }
 
     public List<String> getSynced() { return synced; }
 
