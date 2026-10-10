@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MyJavaApplication</string>
+    <string name="app_name">Subscription Insight</string>
     <string name="login_title">SubScript Advisor</string>
     <string name="username_hint">Username</string>
     <string name="email_hint">Email</string>

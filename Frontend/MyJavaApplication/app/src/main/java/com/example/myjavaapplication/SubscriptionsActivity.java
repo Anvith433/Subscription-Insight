@@ -6,12 +6,13 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import java.math.BigDecimal;
 import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -28,7 +29,8 @@ import retrofit2.Response;
 public class SubscriptionsActivity extends AppCompatActivity implements SubscriptionAdapter.Listener {
 
     private RecyclerView recyclerView;
-    private TextView tvEmptyState;
+    private View emptyState;
+    private TextView tvHeaderSubtitle;
     private ApiService apiService;
     private long userId;
     private String jwtToken;
@@ -42,12 +44,15 @@ public class SubscriptionsActivity extends AppCompatActivity implements Subscrip
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            // The collapsing layout draws the title; the toolbar's own would double it.
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
         recyclerView = findViewById(R.id.recyclerSubscriptions);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        tvEmptyState = findViewById(R.id.tvEmptyState);
+        emptyState = findViewById(R.id.emptyState);
+        tvHeaderSubtitle = findViewById(R.id.tvHeaderSubtitle);
 
         userId = getIntent().getLongExtra("USER_ID", -1);
         jwtToken = getIntent().getStringExtra("JWT_TOKEN");
@@ -93,6 +98,7 @@ public class SubscriptionsActivity extends AppCompatActivity implements Subscrip
                     List<SubscriptionResponse> list = response.body();
                     recyclerView.setAdapter(new SubscriptionAdapter(list, SubscriptionsActivity.this));
                     showEmptyState(list.isEmpty());
+                    bindHeader(list);
                 } else {
                     Toast.makeText(SubscriptionsActivity.this,
                             "Could not load subscriptions (" + response.code() + ")",
@@ -110,8 +116,46 @@ public class SubscriptionsActivity extends AppCompatActivity implements Subscrip
     }
 
     private void showEmptyState(boolean empty) {
-        tvEmptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
+        emptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
         recyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+
+    /**
+     * "3 active · ₹1,046 a month" under the title. Counts the same rows the server's
+     * monthly spend does: active ones, at their monthly-normalised price. The total is
+     * left off when the active rows are in more than one currency, since adding rupees
+     * to dollars would produce a confident, wrong number.
+     */
+    private void bindHeader(List<SubscriptionResponse> list) {
+        int active = 0;
+        BigDecimal total = BigDecimal.ZERO;
+        String currency = null;
+        boolean mixedCurrencies = false;
+        for (SubscriptionResponse sub : list) {
+            if (sub.getStatus() != null && !"ACTIVE".equals(sub.getStatus())) {
+                continue;
+            }
+            active++;
+            BigDecimal monthly = sub.getMonthlyPrice() == null ? sub.getPrice() : sub.getMonthlyPrice();
+            if (monthly != null) {
+                total = total.add(monthly);
+            }
+            if (currency == null) {
+                currency = sub.getCurrency();
+            } else if (sub.getCurrency() != null && !currency.equalsIgnoreCase(sub.getCurrency())) {
+                mixedCurrencies = true;
+            }
+        }
+
+        if (list.isEmpty()) {
+            tvHeaderSubtitle.setText("Everything you pay for, in one place.");
+        } else if (active == 0) {
+            tvHeaderSubtitle.setText("Nothing active right now.");
+        } else if (mixedCurrencies) {
+            tvHeaderSubtitle.setText(active + " active");
+        } else {
+            tvHeaderSubtitle.setText(active + " active · " + Formats.money(currency, total) + " a month");
+        }
     }
 
     @Override
@@ -121,7 +165,7 @@ public class SubscriptionsActivity extends AppCompatActivity implements Subscrip
         // Says what is kept as well as what changes. The server's cancel is a soft one --
         // the snapshots and billing rows survive because they are the evidence behind the
         // verdict -- and a dialog that implied deletion would misrepresent it.
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle("Cancel " + name + "?")
                 .setMessage("It stops counting toward your monthly spend.\n\n"
                         + "Your usage history is kept, and you can reactivate it from this "

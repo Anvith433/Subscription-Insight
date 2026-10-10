@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material reads the default item as the resting outline and state_focused as the
+  focused one, so a field darkens to ink only while it is being typed in.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/ink" android:state_focused="true" />
+    <item android:color="@color/ink" android:state_hovered="true" />
+    <item android:color="@color/field_stroke" />
+</selector>

@@ -9,15 +9,20 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import java.math.BigDecimal;
@@ -84,6 +89,8 @@ public class AddSubscriptionActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            // The collapsing layout draws the title; the toolbar's own would double it.
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -108,15 +115,15 @@ public class AddSubscriptionActivity extends AppCompatActivity {
 
         // Defaults that match the server's own, so the form shows what will be stored
         // rather than leaving the user to guess what a blank field means.
-        etCategory.setText(CATEGORIES[0]);
-        etCycle.setText(CYCLES[0]);
+        etCategory.setText(Formats.enumLabel(CATEGORIES[0]));
+        etCycle.setText(Formats.enumLabel(CYCLES[0]));
         etCurrency.setText("INR");
         etPrice.setText("0.00");
         etStartDate.setText(today());
 
         etApp.setOnClickListener(v -> onAppFieldTapped());
         etCategory.setOnClickListener(v -> pick("Category", CATEGORIES, etCategory));
-        etCycle.setOnClickListener(v -> pick("Renewal cycle", CYCLES, etCycle));
+        etCycle.setOnClickListener(v -> pick("Billed", CYCLES, etCycle));
         etStartDate.setOnClickListener(v -> showDatePicker());
         btnSave.setOnClickListener(v -> save());
 
@@ -213,12 +220,29 @@ public class AddSubscriptionActivity extends AppCompatActivity {
         final ListView list = content.findViewById(R.id.listApps);
         EditText search = content.findViewById(R.id.etAppSearch);
 
-        // A copy, because ArrayAdapter's filter mutates the list it was given.
-        final ArrayAdapter<AppEntry> adapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_list_item_1, new ArrayList<>(apps));
+        // A copy, because ArrayAdapter's filter mutates the list it was given. The base
+        // getView still binds toString() into tvAppLabel; the override then splits it
+        // into name and package and adds the icon, leaving the filter untouched.
+        final ArrayAdapter<AppEntry> adapter = new ArrayAdapter<AppEntry>(
+                this, R.layout.item_app_picker, R.id.tvAppLabel, new ArrayList<>(apps)) {
+            @NonNull
+            @Override
+            public View getView(int position, View convertView, @NonNull ViewGroup parent) {
+                View row = super.getView(position, convertView, parent);
+                AppEntry entry = getItem(position);
+                if (entry != null) {
+                    ((TextView) row.findViewById(R.id.tvAppLabel)).setText(entry.label);
+                    ((TextView) row.findViewById(R.id.tvAppPackage)).setText(entry.packageName);
+                    AppIcons.bind((ImageView) row.findViewById(R.id.ivAppIcon),
+                            (TextView) row.findViewById(R.id.tvMonogram),
+                            entry.packageName, entry.label);
+                }
+                return row;
+            }
+        };
         list.setAdapter(adapter);
 
-        final AlertDialog dialog = new AlertDialog.Builder(this)
+        final AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle("Choose the app")
                 .setView(content)
                 .setNegativeButton("Cancel", null)
@@ -260,7 +284,10 @@ public class AddSubscriptionActivity extends AppCompatActivity {
     private void selectApp(AppEntry entry) {
         selectedPackage = entry.packageName;
         selectedLabel = entry.label;
-        etApp.setText(entry.label + "  (" + entry.packageName + ")");
+        // The name in the field, the package under it: the package is what matching
+        // keys on, so it stays visible, but it is not what anyone looks for first.
+        etApp.setText(entry.label);
+        tilApp.setHelperText("Matched on " + entry.packageName);
         tilApp.setError(null);
 
         // Auto-fill the provider, but never clobber something the user typed. "YouTube"
@@ -291,10 +318,15 @@ public class AddSubscriptionActivity extends AppCompatActivity {
 
     // ---------------------------------------------------------------- other pickers
 
+    /** Shows the enum values as words ("Monthly"); save() turns them back with enumValue. */
     private void pick(String title, final String[] values, final TextInputEditText target) {
-        new AlertDialog.Builder(this)
+        final String[] labels = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = Formats.enumLabel(values[i]);
+        }
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(title)
-                .setItems(values, (dialog, which) -> target.setText(values[which]))
+                .setItems(labels, (dialog, which) -> target.setText(labels[which]))
                 .show();
     }
 
@@ -366,8 +398,8 @@ public class AddSubscriptionActivity extends AppCompatActivity {
         SubscriptionRequestBody body = SubscriptionRequestBody.create(
                 provider,
                 selectedPackage,
-                text(etCategory),
-                text(etCycle),
+                Formats.enumValue(text(etCategory)),
+                Formats.enumValue(text(etCycle)),
                 text(etStartDate),
                 price,
                 currency.isEmpty() ? null : currency);

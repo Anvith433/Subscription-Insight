@@ -1,0 +1,10 @@
+<resources>
+    <!--
+      The navigation bar only goes paper-coloured from API 27, which is where it can also
+      be given dark icons. Doing it lower down would leave white icons on a cream bar.
+    -->
+    <style name="Theme.MyJavaApplication" parent="Base.Theme.Insight">
+        <item name="android:navigationBarColor">@color/paper</item>
+        <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
+    </style>
+</resources>

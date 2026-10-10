@@ -1,23 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Paper and ink. Every colour the app draws comes from this file, and values-night has
+  the same names, so no layout or adapter needs to know which mode it is in.
+
+  One accent on purpose: buttons are ink, and the only "colour" outside the verdicts is
+  the highlighter behind the savings figure.
+-->
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="paper">#F4EFE6</color>
+    <color name="card">#FFFCF7</color>
+    <color name="ink">#1E1C19</color>
+    <color name="ink_muted">#6B655B</color>
+    <color name="hairline">#E6DFD3</color>
+    <color name="field_stroke">#928A7C</color>
+    <color name="on_ink">#FFFCF7</color>
+    <color name="on_ink_muted">#B8B1A5</color>
+    <color name="ripple_on_ink">#33FFFFFF</color>
+    <color name="highlight">#F6D365</color>
+    <color name="chip_neutral">#ECE6DB</color>
+    <color name="error">#A3392B</color>
 
-    <!-- Modern Color Palette -->
-    <color name="colorPrimary">#6200EE</color>
-    <color name="colorPrimaryVariant">#3700B3</color>
-    <color name="colorSecondary">#03DAC6</color>
-    <color name="colorBackground">#F8F9FA</color>
-    <color name="colorSurface">#FFFFFF</color>
-    <color name="colorError">#B00020</color>
-    <color name="colorOnPrimary">#FFFFFF</color>
-    <color name="colorOnSecondary">#000000</color>
-    <color name="colorOnBackground">#000000</color>
-    <color name="colorOnSurface">#000000</color>
-
-    <!-- Accent Colors -->
-    <color name="blue_600">#1E88E5</color>
-    <color name="indigo_700">#303F9F</color>
-    <color name="grey_400">#BDBDBD</color>
-    <color name="grey_200">#EEEEEE</color>
+    <!-- Verdicts: a readable foreground, and a pale wash of it for pills and bars. -->
+    <color name="verdict_keep">#2F6B4A</color>
+    <color name="verdict_keep_bg">#E2EEDF</color>
+    <color name="verdict_consider">#7A5E10</color>
+    <color name="verdict_consider_bg">#F5EBC9</color>
+    <color name="verdict_downgrade">#99491A</color>
+    <color name="verdict_downgrade_bg">#F6E2D2</color>
+    <color name="verdict_cancel">#A3392B</color>
+    <color name="verdict_cancel_bg">#F6DDD7</color>
 </resources>

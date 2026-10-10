@@ -1,21 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  The dashboard reads top to bottom as an answer: what you pay and what you could stop
+  paying (the summary "receipt"), where your time actually goes (the chart), then a
+  verdict per subscription.
+-->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground">
+    android:background="@color/paper">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorSurface">
+        android:background="@color/paper"
+        app:elevation="0dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            style="@style/Widget.Insight.CollapsingToolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Usage Analytics"
-            app:titleTextColor="@color/colorPrimary" />
+            android:layout_height="150dp"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
+            app:title="Your month">
+
+            <TextView
+                style="@style/Text.Insight.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="16dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="What you pay, and what you get for it."
+                app:layout_collapseMode="parallax" />
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_collapseMode="pin"
+                app:navigationContentDescription="Back"
+                app:navigationIcon="@drawable/ic_arrow_back" />
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -27,126 +55,159 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="32dp">
 
             <!--
-              Account totals. Starts GONE and is only shown once the summary call
-              succeeds: a card full of dashes is worse than no card, because it looks
-              like the figures are genuinely zero.
+              Account totals, laid out like a receipt. Starts GONE and is only shown once
+              the summary call succeeds: a card full of zeros is worse than no card,
+              because it looks like the figures are genuinely zero.
             -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardSummary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/colorSurface"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
+                android:layout_marginBottom="32dp"
+                android:visibility="gone">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:id="@+id/tvSummaryPeriod"
+                        style="@style/Text.Insight.Overline"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="This month"
-                        android:textColor="#757575"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+                        android:text="This month" />
 
                     <TextView
-                        android:id="@+id/tvSummarySpend"
+                        style="@style/Text.Insight.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="INR 0.00 across 0 subscriptions"
-                        android:textColor="@color/colorOnSurface"
-                        android:textSize="16sp" />
+                        android:layout_marginTop="16dp"
+                        android:text="You're paying" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvSummarySpend"
+                            style="@style/Text.Insight.Figure"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₹0" />
+
+                        <TextView
+                            style="@style/Text.Insight.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="a month" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvSummaryCount"
+                        style="@style/Text.Insight.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="across 0 active subscriptions" />
 
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginVertical="12dp"
-                        android:background="#EEEEEE" />
+                        android:layout_height="2dp"
+                        android:layout_marginTop="20dp"
+                        android:layout_marginBottom="20dp"
+                        android:background="@drawable/divider_dashed"
+                        android:layerType="software" />
 
                     <TextView
+                        style="@style/Text.Insight.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="You could stop paying"
-                        android:textColor="#757575"
-                        android:textSize="13sp" />
+                        android:text="You could stop paying" />
 
-                    <!-- The emphasised number: the one figure the product exists to give. -->
-                    <TextView
-                        android:id="@+id/tvSummarySavings"
-                        android:layout_width="wrap_content"
+                    <!-- The figure the product exists to give, so it gets the highlighter. -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="INR 0.00 / month"
-                        android:textColor="#2E7D32"
-                        android:textSize="28sp"
-                        android:textStyle="bold" />
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvSummarySavings"
+                            style="@style/Text.Insight.Figure"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_highlight"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:text="₹0" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            style="@style/Text.Insight.Caption"
+                            android:layout_marginStart="6dp"
+                            android:text="a month" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvSummaryWaste"
+                        style="@style/Text.Insight.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="0% of your spend · 0 unused"
-                        android:textColor="#757575"
-                        android:textSize="13sp" />
+                        android:layout_marginTop="4dp"
+                        android:text="0% of your spend" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Chart Card -->
+            <TextView
+                style="@style/Text.Insight.Headline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Where your time goes" />
+
+            <TextView
+                android:id="@+id/tvChartCaption"
+                style="@style/Text.Insight.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="12dp"
+                android:text="Time in each app, coloured by its verdict." />
+
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
+                android:layout_marginBottom="32dp">
 
-                <LinearLayout
+                <!-- Height is set from DashboardActivity, so each bar gets the same room. -->
+                <com.github.mikephil.charting.charts.HorizontalBarChart
+                    android:id="@+id/barChart"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <!--
-                      Was "Weekly Usage (Mins)", which contradicted the data: the
-                      dashboard is monthly, and renderBarChart puts the real period in
-                      the chart description just below this line.
-                    -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Usage per subscription (mins)"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/colorPrimary"
-                        android:layout_marginBottom="16dp"/>
-
-                    <com.github.mikephil.charting.charts.BarChart
-                        android:id="@+id/barChart"
-                        android:layout_width="match_parent"
-                        android:layout_height="250dp" />
-                </LinearLayout>
+                    android:layout_height="200dp"
+                    android:layout_margin="12dp" />
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Recommendations Section -->
             <TextView
+                style="@style/Text.Insight.Headline"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Recommendations"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="@color/colorOnBackground"
-                android:layout_marginBottom="12dp" />
+                android:text="The verdicts" />
+
+            <TextView
+                style="@style/Text.Insight.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp"
+                android:text="What each one costs per hour you actually use it." />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerView"

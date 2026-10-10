@@ -1,123 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One subscription in the list. Modelled on item_recommendation.xml so the two screens
-  read as the same app: MaterialCardView, 12dp radius, a coloured stroke carrying the
-  state, and the green price pill on the right.
+  One subscription in the list: the app's real icon, what it is, what it costs.
 
-  The stroke colour is set in SubscriptionAdapter, not here: strokeColor is per-status.
+  State is carried by the pill and by dimming the whole card (both set in
+  SubscriptionAdapter), not by a coloured border: an active subscription is the normal
+  case and should look calm, and a cancelled one should look like it is not costing
+  anything.
 -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/subscriptionCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="6dp"
-    app:strokeColor="#E0E0E0"
-    app:strokeWidth="1dp">
+    android:layout_marginStart="20dp"
+    android:layout_marginEnd="20dp"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp">
 
-            <!--
-              The overflow button is anchored to the end and everything else is laid out
-              to its start, so a long provider name is truncated rather than pushing the
-              menu off the card.
-            -->
-            <ImageButton
-                android:id="@+id/btnOverflow"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_alignParentEnd="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Subscription options"
-                android:src="@android:drawable/ic_menu_more" />
+            <ImageView
+                android:id="@+id/ivAppIcon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/tvMonogram"
+                style="@style/Text.Insight.Monogram"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvProviderName"
-                android:layout_width="wrap_content"
+                style="@style/Text.Insight.Title"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_toStartOf="@id/btnOverflow"
-                android:layout_marginEnd="8dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Netflix"
-                android:textColor="@color/black"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:text="Netflix" />
 
-            <TextView
-                android:id="@+id/tvStatusBadge"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_below="@id/tvProviderName"
-                android:layout_marginTop="4dp"
-                android:background="@color/grey_200"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
-                android:text="CANCELLED"
-                android:textColor="#616161"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-        </RelativeLayout>
+                android:layout_marginTop="3dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tvPackageName"
+                <TextView
+                    android:id="@+id/tvStatusBadge"
+                    style="@style/Text.Insight.Pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:text="Cancelled"
+                    android:textColor="@color/ink_muted"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvMeta"
+                    style="@style/Text.Insight.Caption"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="OTT · Monthly · renews 1 Nov" />
+            </LinearLayout>
+
+            <!--
+              The package is the key the whole usage matcher turns on, so it stays
+              visible: if a subscription never picks up usage, this is the line to check.
+            -->
+            <TextView
+                android:id="@+id/tvPackageName"
+                style="@style/Text.Insight.Mono"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="com.netflix.mediaclient" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:ellipsize="middle"
-            android:fontFamily="monospace"
-            android:maxLines="1"
-            android:text="com.netflix.mediaclient"
-            android:textColor="#757575"
-            android:textSize="12sp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="12dp"
-            android:background="#EEEEEE" />
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:gravity="end"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvPrice"
+                style="@style/Text.Insight.Stat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:background="#E8F5E9"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:text="₹199.00/mo"
-                android:textColor="#2E7D32"
-                android:textStyle="bold" />
+                android:text="₹199" />
 
             <TextView
-                android:id="@+id/tvMeta"
+                android:id="@+id/tvPriceUnit"
+                style="@style/Text.Insight.Caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:layout_toStartOf="@id/tvPrice"
-                android:layout_marginEnd="8dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="OTT · MONTHLY · from 2026-08-01"
-                android:textColor="#757575"
-                android:textSize="13sp" />
-        </RelativeLayout>
+                android:text="a month"
+                android:textSize="12sp" />
+        </LinearLayout>
 
+        <ImageButton
+            android:id="@+id/btnOverflow"
+            android:layout_width="40dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Subscription options"
+            android:src="@drawable/ic_more_vert" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
