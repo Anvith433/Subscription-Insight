@@ -4,17 +4,23 @@ import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -37,9 +43,11 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
 
     private TextInputEditText etEmail, etPassword, etActualUsername, etConfirmPassword;
     private TextInputLayout tilActualUsername, tilConfirmPassword, tilEmail;
-    private MaterialButton btnLogin, btnPermission, btnSubscriptions, btnSync, btnDashboard;
-    private View layoutPostLogin;
-    private TextView tvSignupLink, tvTitle;
+    private MaterialButton btnLogin;
+    // The four setup steps are cards rather than buttons; all they need is a click.
+    private View btnPermission, btnSubscriptions, btnSync, btnDashboard;
+    private View layoutPostLogin, ivStep1Done;
+    private TextView tvSignupLink, tvTitle, tvSubtitle, tvGreeting, tvStep1Number, tvStep1Body;
     private boolean isLoggedIn = false;
     private boolean isSignupMode = false;
     private ApiService apiService;
@@ -68,6 +76,8 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
         tvTitle = findViewById(R.id.tvTitle);
+        tvSubtitle = findViewById(R.id.tvSubtitle);
+        tvGreeting = findViewById(R.id.tvGreeting);
         etActualUsername = findViewById(R.id.etActualUsername);
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
@@ -82,19 +92,20 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
         btnSubscriptions = findViewById(R.id.btnSubscriptions);
         btnSync = findViewById(R.id.btnSync);
         btnDashboard = findViewById(R.id.btnDashboard);
+        tvStep1Number = findViewById(R.id.tvStep1Number);
+        tvStep1Body = findViewById(R.id.tvStep1Body);
+        ivStep1Done = findViewById(R.id.ivStep1Done);
 
         tilActualUsername.setVisibility(View.GONE);
         tilConfirmPassword.setVisibility(View.GONE);
         layoutPostLogin.setVisibility(View.GONE);
+        tvSignupLink.setText(linkText("New here?", "Create an account"));
 
+        // One link, both directions: it used to vanish in sign-up mode, which left no
+        // way back to signing in short of a successful sign-up.
         tvSignupLink.setOnClickListener(v -> {
-            isSignupMode = true;
-            tilActualUsername.setVisibility(View.VISIBLE);
-            tilConfirmPassword.setVisibility(View.VISIBLE);
-            tilEmail.setHint("Email Address");
-            btnLogin.setText("Create Account");
-            tvTitle.setText("Sign Up");
-            tvSignupLink.setVisibility(View.GONE);
+            if (isSignupMode) switchToLoginMode();
+            else switchToSignupMode();
         });
 
         btnLogin.setOnClickListener(v -> {
@@ -136,6 +147,18 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
         });
     }
 
+    /**
+     * Coming back from the usage-access settings screen is the usual way into this, and
+     * step 1 should show what the user just did there.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (isLoggedIn) {
+            updatePermissionStep();
+        }
+    }
+
     private void showSyncOptions() {
         // The month comes first and is the recommendation. It is the only window that
         // covers a whole billing period, so it is the only one the server can turn into
@@ -143,8 +166,8 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
         // than a guess between three equal-looking options. The previous order put
         // "Today's Usage" first, which made the least useful scan the easiest to pick.
         String[] options = {"This Month (recommended)", "This Week (provisional)", "Today (provisional)"};
-        new AlertDialog.Builder(this)
-                .setTitle("Select Sync Period")
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Sync which period?")
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
                         case 0:
@@ -197,8 +220,8 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
                 if (subs.isEmpty()) {
                     // Scanning now would report nothing and read as a broken sync.
                     Toast.makeText(MainActivity.this,
-                            "No subscriptions yet -- add one under \"2. Manage Subscriptions\", "
-                                    + "then sync.", Toast.LENGTH_LONG).show();
+                            "No subscriptions yet. Add one in step 2, then sync.",
+                            Toast.LENGTH_LONG).show();
                     return;
                 }
 
@@ -391,17 +414,52 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
     private void handleLoginSuccess(String user) {
         findViewById(R.id.loginCard).setVisibility(View.GONE);
         layoutPostLogin.setVisibility(View.VISIBLE);
-        Toast.makeText(this, "Welcome " + user, Toast.LENGTH_SHORT).show();
+        tvGreeting.setText(user == null || user.trim().isEmpty()
+                ? "Welcome back." : "Hi, " + user.trim() + ".");
+        updatePermissionStep();
+    }
+
+    /** Step 1 swaps its number for a tick once usage access is on. */
+    private void updatePermissionStep() {
+        boolean granted = checkUsagePermission();
+        tvStep1Number.setVisibility(granted ? View.INVISIBLE : View.VISIBLE);
+        ivStep1Done.setVisibility(granted ? View.VISIBLE : View.GONE);
+        tvStep1Body.setText(granted
+                ? "Done. You can turn it off in Settings any time."
+                : "So the app can see how long you spend in each app.");
+    }
+
+    private void switchToSignupMode() {
+        isSignupMode = true;
+        tilActualUsername.setVisibility(View.VISIBLE);
+        tilConfirmPassword.setVisibility(View.VISIBLE);
+        tilEmail.setHint("Email");
+        btnLogin.setText("Create account");
+        tvTitle.setText("Let's get you set up.");
+        tvSubtitle.setText("One account keeps your subscriptions and their usage together.");
+        tvSignupLink.setText(linkText("Already have an account?", "Sign in"));
     }
 
     private void switchToLoginMode() {
         isSignupMode = false;
         tilActualUsername.setVisibility(View.GONE);
         tilConfirmPassword.setVisibility(View.GONE);
-        tilEmail.setHint("Username / Email");
-        btnLogin.setText("Login");
-        tvTitle.setText("Subscription Insight");
-        tvSignupLink.setVisibility(View.VISIBLE);
+        tilConfirmPassword.setError(null);
+        tilEmail.setHint("Email or username");
+        btnLogin.setText("Sign in");
+        tvTitle.setText("Is that ₹199 a month actually worth it?");
+        tvSubtitle.setText("Line up what you pay for each subscription against how much you actually use it.");
+        tvSignupLink.setText(linkText("New here?", "Create an account"));
+    }
+
+    /** "New here? Create an account", with the action half in ink and bold. */
+    private CharSequence linkText(String lead, String action) {
+        SpannableString text = new SpannableString(lead + " " + action);
+        int start = lead.length() + 1;
+        text.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.ink)),
+                start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new StyleSpan(Typeface.BOLD), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return text;
     }
 
     private void hideKeyboard() {
@@ -419,8 +477,11 @@ public class MainActivity extends AppCompatActivity implements UsageContracts.Vi
     }
 
     private void showPermissionDeniedDialog() {
-        new AlertDialog.Builder(this).setTitle("Permission Needed").setMessage("Find 'MyJavaApplication' in the list and turn it ON.")
-                .setPositiveButton("Settings", (d, w) -> startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)))
-                .setNegativeButton("Cancel", null).show();
+        // Names the app by its launcher label, which is what the settings list shows.
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Usage access is off")
+                .setMessage("Find \"" + getString(R.string.app_name) + "\" in the list and turn it on.")
+                .setPositiveButton("Open settings", (d, w) -> startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)))
+                .setNegativeButton("Not now", null).show();
     }
 }

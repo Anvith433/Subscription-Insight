@@ -113,7 +113,8 @@ The backend is a **modular monolith**: one deployable, packages split by domain
 | Networking | Retrofit + Gson converter + OkHttp logging interceptor |
 | UI | AppCompat, Material 1.10.0, ConstraintLayout, RecyclerView adapter |
 | Usage data | `com.github.TheBotBox:AppsUsageMonitorAPI:1.1` (JitPack) — wraps `UsageStatsManager`; needs `PACKAGE_USAGE_STATS` + `QUERY_ALL_PACKAGES` |
-| Charts | MPAndroidChart 3.1.0 (`BarChart` on the dashboard) |
+| Charts | MPAndroidChart 3.1.0 (`HorizontalBarChart` on the dashboard) |
+| Type | Fraunces (headlines, figures) and DM Sans (UI), bundled in `res/font`, both SIL OFL 1.1 (licences in `assets/licenses`) |
 
 ---
 
@@ -246,17 +247,17 @@ Seeded users are `anvith` and `rahul`. Login accepts **either** a username or an
 
 A fresh account has no subscriptions, and the usage sync has nothing to match against
 until it does — it will tell you so rather than upload anything. Work down the four
-buttons in order:
+steps on the home screen in order:
 
-1. **Grant Usage Access** — sends you to the system settings page for it. Android has no
-   API to grant this on the user's behalf.
-2. **Manage Subscriptions** → **Add subscription** — pick the app the subscription belongs
+1. **Allow usage access** — sends you to the system settings page for it. Android has no
+   API to grant this on the user's behalf. The step shows a tick once it is on.
+2. **Add your subscriptions** → **Add subscription** — pick the app the subscription belongs
    to from the installed-app list. See
    [Adding a subscription](#adding-a-subscription-why-the-package-name-is-picked-not-typed)
    for why it is a picker and not a text field.
-3. **Sync Usage Data** — choose a window; it uploads only the apps you have subscriptions
+3. **Sync your usage** — choose a window; it uploads only the apps you have subscriptions
    for.
-4. **View Analytics Dashboard** — the summary card and the per-subscription verdicts.
+4. **See what's worth keeping** — the summary card and the per-subscription verdicts.
 
 Steps 2 and 3 are order-dependent in one direction only: adding a subscription after a
 sync is fine, the next sync picks it up.
@@ -808,18 +809,18 @@ which switches between them by toggling view visibility rather than navigating.
 
 | Activity | Layout | Purpose |
 |---|---|---|
-| `MainActivity` | `activity_main.xml` | Login **and** signup (same form, `isSignupMode` reveals the extra fields), then the post-login panel: Grant Access / Manage Subscriptions / Sync / Dashboard |
+| `MainActivity` | `activity_main.xml` | Login **and** signup (same form, `isSignupMode` reveals the extra fields), then the post-login home: a four-step checklist (usage access / subscriptions / sync / dashboard) |
 | `SubscriptionsActivity` | `activity_subscriptions.xml` | The user's subscriptions via `SubscriptionAdapter` / `item_subscription.xml`, with cancel and reactivate on each card and an extended FAB to add one |
 | `AddSubscriptionActivity` | `activity_add_subscription.xml` | The add form, with the app picker in `dialog_app_picker.xml` |
-| `DashboardActivity` | `activity_dashboard.xml` | Account summary card, a `BarChart` (MPAndroidChart), then a `RecyclerView` of per-subscription verdicts via `RecommendationAdapter` / `item_recommendation.xml` |
+| `DashboardActivity` | `activity_dashboard.xml` | Account summary card, a `HorizontalBarChart` (MPAndroidChart) with bars coloured by verdict, then a `RecyclerView` of per-subscription verdicts via `RecommendationAdapter` / `item_recommendation.xml` |
 
-The post-login buttons are numbered in the order they have to happen:
+The post-login steps are numbered in the order they have to happen:
 
 ```
-1. Grant Usage Access
-2. Manage Subscriptions
-3. Sync Usage Data
-4. View Analytics Dashboard
+1. Allow usage access
+2. Add your subscriptions
+3. Sync your usage
+4. See what's worth keeping
 ```
 
 Step 2 used to be missing, and its absence made the rest unreachable. There was no screen
@@ -827,6 +828,23 @@ that called `POST /api/subscriptions`, so a phone-only user tapped **Sync**, was
 "add a subscription first", and had nowhere to do it — the usage matcher, the
 cost-per-hour figures and the whole dashboard sat behind a door with no handle.
 Subscriptions could only be created with curl, Swagger UI or an `INSERT`.
+
+### Look and feel
+
+Warm paper background, ink-black buttons, one highlighter-yellow accent for the savings
+figure, and muted verdict colours (sage, ochre, rust, brick). Everything is set up so
+layouts only describe what is particular to them:
+
+| File | What it holds |
+|---|---|
+| `res/values/colors.xml` / `res/values-night/colors.xml` | The whole palette, with the same names in both, so dark mode needs no code |
+| `res/values/themes.xml` | The app theme; it points every `TextInputLayout`, `MaterialButton`, `MaterialCardView`, toolbar and FAB at its style |
+| `res/values/styles.xml` | Text styles (`Text.Insight.*`) and those widget styles (`Widget.Insight.*`) |
+| `Formats.java` | Display formatting: `₹1,046`, `1h 12m`, `October 2026` |
+| `AppIcons.java` | A subscription's real app icon, or a lettered circle if the app is not installed |
+
+Text styles are applied with `style=`, not `android:textAppearance`: the theme sets the
+app-wide font, and a theme-level font outranks a text appearance.
 
 ### Adding a subscription: why the package name is picked, not typed
 
@@ -1320,7 +1338,7 @@ Development defaults that **must** change before any real deployment:
 - A manual-entry path in the add form for subscriptions with no installed app
 - Scheduled monthly billing generation
 - Renewal notifications
-- Richer dashboard charts (trend over time; a `BarChart` and a summary card already ship)
+- Richer dashboard charts (trend over time; a bar chart and a summary card already ship)
 - Recommendation history and trend graphs
 - Provider plan catalogue → real `DOWNGRADE` savings and `UPGRADE` support
 - Refresh tokens

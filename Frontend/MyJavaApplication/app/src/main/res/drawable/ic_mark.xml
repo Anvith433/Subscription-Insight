@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The app's mark: a pie with one slice pulled out: the part of what you pay for that
+  you actually use. Same drawing as the launcher icon. The slice is a fixed yellow, not
+  @color/highlight, which goes dark at night for text contrast.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@color/ink"
+        android:pathData="M11,13L11,4A9,9 0,1 0,20 13Z" />
+    <path
+        android:fillColor="#F6D365"
+        android:pathData="M12.5,11.5L12.5,2.5A9,9 0,0 1,21.5 11.5Z" />
+</vector>

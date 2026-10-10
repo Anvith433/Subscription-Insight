@@ -5,25 +5,24 @@
   A search box over a plain ListView. The list is backed by an ArrayAdapter<AppEntry>
   whose toString() is "label - package", which is what ArrayAdapter's built-in filter
   matches on, so one TextWatcher searches both the visible name and the package id,
-  and getItem(position) still returns the right entry after filtering.
+  and getItem(position) still returns the right entry after filtering. Each row is
+  item_app_picker.xml, drawn with the app's own icon.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="16dp"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
     android:paddingTop="8dp">
 
     <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:hint="Search apps"
-        app:hintTextColor="@color/colorPrimary"
-        app:boxStrokeColor="@color/colorPrimary"
-        app:startIconDrawable="@android:drawable/ic_menu_search">
+        app:startIconDrawable="@drawable/ic_search">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etAppSearch"
@@ -31,13 +30,15 @@
             android:layout_height="wrap_content"
             android:imeOptions="actionSearch"
             android:inputType="text"
-            android:maxLines="1"
-            android:textColor="@android:color/black" />
+            android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <ListView
         android:id="@+id/listApps"
         android:layout_width="match_parent"
-        android:layout_height="360dp" />
+        android:layout_height="360dp"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:scrollbarStyle="outsideOverlay" />
 
 </LinearLayout>

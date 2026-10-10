@@ -1,70 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  One verdict. The pill says what to do; the strip under it says why in three numbers,
+  ending on cost per hour, which is the figure every verdict is derived from. The
+  engine's own sentence follows, then what acting on it would save.
+
+  Pill and savings colours are set per row in RecommendationAdapter.
+-->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/recommendationCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="6dp"
-    app:strokeColor="#E0E0E0"
-    app:strokeWidth="1dp">
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="16dp">
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="36dp"
+                android:layout_height="36dp">
+
+                <ImageView
+                    android:id="@+id/ivAppIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:id="@+id/tvMonogram"
+                    style="@style/Text.Insight.Monogram"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:importantForAccessibility="no"
+                    android:textSize="16sp"
+                    android:visibility="gone" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/tvAppName"
-                android:layout_width="wrap_content"
+                style="@style/Text.Insight.Title"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Netflix"
-                android:textSize="20sp"
-                android:textColor="@color/black"
-                android:textStyle="bold" />
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Netflix" />
 
             <TextView
-                android:id="@+id/tvPrice"
+                android:id="@+id/tvVerdict"
+                style="@style/Text.Insight.Pill"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:background="#E8F5E9"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:text="₹199/mo"
-                android:textColor="#2E7D32"
-                android:textStyle="bold" />
-        </RelativeLayout>
+                android:text="Keep" />
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvUsageMins"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="Used for 120 mins"
-            android:textColor="#757575"
-            android:textSize="14sp" />
-
-        <View
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="12dp"
-            android:background="#EEEEEE" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_stats"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvPrice"
+                    style="@style/Text.Insight.Stat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹199" />
+
+                <TextView
+                    style="@style/Text.Insight.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="a month"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvUsageMins"
+                    style="@style/Text.Insight.Stat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2h 10m" />
+
+                <TextView
+                    android:id="@+id/tvUsageLabel"
+                    style="@style/Text.Insight.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="used"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvCostPerHour"
+                    style="@style/Text.Insight.Stat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹91.85" />
+
+                <TextView
+                    style="@style/Text.Insight.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="per hour"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvReason"
-            android:layout_width="wrap_content"
+            style="@style/Text.Insight.Body"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Insight: High usage detected. Consider a yearly plan to save 20%."
-            android:textColor="#D32F2F"
+            android:layout_marginTop="12dp"
             android:textSize="14sp"
-            android:textStyle="italic" />
+            android:text="Used regularly enough to be worth what it costs." />
+
+        <TextView
+            android:id="@+id/tvSavings"
+            style="@style/Text.Insight.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            android:visibility="gone"
+            android:text="Cancelling frees up ₹199 a month." />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

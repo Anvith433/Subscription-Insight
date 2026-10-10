@@ -1,33 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Add-subscription form. Same idiom as activity_main.xml: a MaterialCardView holding
-  OutlinedBox TextInputLayouts, with a 56dp MaterialButton at the bottom.
+  Add-subscription form, grouped the way you would fill it in: which app, what it costs,
+  when it started.
 
-  Four of the six fields are read-only pickers rather than free text. The app field in
-  particular must not be typeable: its value becomes subscriptions.package_name, which is
-  the key the usage matcher compares against, and a typo there does not error: it
-  silently never matches.
+  Four of the six fields are read-only pickers rather than free text, marked as such
+  with a chevron or calendar. The app field in particular must not be typeable: its value
+  becomes subscriptions.package_name, which is the key the usage matcher compares
+  against, and a typo there does not error: it silently never matches.
+
+  NestedScrollView rather than ScrollView, so scrolling the form collapses the title.
 -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground">
+    android:background="@color/paper">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorSurface">
+        android:background="@color/paper"
+        app:elevation="0dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            style="@style/Widget.Insight.CollapsingToolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Add Subscription"
-            app:titleTextColor="@color/colorPrimary" />
+            android:layout_height="150dp"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
+            app:title="New subscription">
+
+            <TextView
+                style="@style/Text.Insight.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="16dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Pick the app, then tell us what it costs."
+                app:layout_collapseMode="parallax" />
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_collapseMode="pin" />
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
@@ -37,197 +60,176 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="32dp">
 
-            <com.google.android.material.card.MaterialCardView
+            <TextView
+                style="@style/Text.Insight.Overline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="The app" />
+
+            <!--
+              focusable=false so a tap opens the picker instead of the keyboard.
+              The helper text explains why it is not typeable, since a read-only
+              field with no explanation reads as broken.
+            -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilApp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/colorSurface"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="8dp">
+                android:layout_marginBottom="14dp"
+                android:hint="App"
+                app:helperText="Picked from your installed apps, so usage matches"
+                app:helperTextEnabled="true">
 
-                <LinearLayout
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etApp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:drawableEnd="@drawable/ic_search"
+                    android:drawablePadding="8dp"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <!--
-                      focusable=false so a tap opens the picker instead of the keyboard.
-                      The helper text explains why it is not typeable, since a read-only
-                      field with no explanation reads as broken.
-                    -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilApp"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilProvider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:hint="Name"
+                app:helperText="Filled in from the app. Change it to match your plan."
+                app:helperTextEnabled="true">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etProvider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Category">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCategory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:drawableEnd="@drawable/ic_chevron_down"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                style="@style/Text.Insight.Overline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:layout_marginBottom="10dp"
+                android:text="What you pay" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPrice"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp"
+                    android:layout_marginBottom="14dp"
+                    android:layout_weight="2"
+                    android:hint="Price">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPrice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="App"
-                        app:helperText="Picked from your installed apps, so usage matches"
-                        app:helperTextEnabled="true"
-                        app:hintTextColor="@color/colorPrimary"
-                        app:boxStrokeColor="@color/colorPrimary"
-                        app:startIconDrawable="@android:drawable/ic_menu_search">
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etApp"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:clickable="true"
-                            android:cursorVisible="false"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:textColor="@android:color/black" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilCurrency"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:layout_weight="1"
+                    android:hint="Currency">
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilProvider"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    <!-- The server requires exactly three characters. -->
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCurrency"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="Provider name"
-                        app:helperText="Auto-filled from the app; edit for a plan name"
-                        app:helperTextEnabled="true"
-                        app:hintTextColor="@color/colorPrimary"
-                        app:boxStrokeColor="@color/colorPrimary">
+                        android:inputType="textCapCharacters"
+                        android:maxLength="3" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etProvider"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textCapWords"
-                            android:textColor="@android:color/black" />
-                    </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCycle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Billed">
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilCategory"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="Category"
-                        app:hintTextColor="@color/colorPrimary"
-                        app:boxStrokeColor="@color/colorPrimary">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCycle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:drawableEnd="@drawable/ic_chevron_down"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCategory"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:clickable="true"
-                            android:cursorVisible="false"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:textColor="@android:color/black" />
-                    </com.google.android.material.textfield.TextInputLayout>
+            <TextView
+                style="@style/Text.Insight.Overline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:layout_marginBottom="10dp"
+                android:text="When it started" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilStartDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Start date"
+                app:helperText="The renewal date is worked out from this"
+                app:helperTextEnabled="true">
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/tilPrice"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="12dp"
-                            android:layout_marginBottom="16dp"
-                            android:layout_weight="2"
-                            android:hint="Price"
-                            app:hintTextColor="@color/colorPrimary"
-                            app:boxStrokeColor="@color/colorPrimary">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etStartDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:drawableEnd="@drawable/ic_calendar"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etPrice"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="numberDecimal"
-                                android:textColor="@android:color/black" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/tilCurrency"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="16dp"
-                            android:layout_weight="1"
-                            android:hint="Currency"
-                            app:counterEnabled="false"
-                            app:hintTextColor="@color/colorPrimary"
-                            app:boxStrokeColor="@color/colorPrimary">
-
-                            <!-- The server requires exactly three characters. -->
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etCurrency"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textCapCharacters"
-                                android:maxLength="3"
-                                android:textColor="@android:color/black" />
-                        </com.google.android.material.textfield.TextInputLayout>
-                    </LinearLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilCycle"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="Renewal cycle"
-                        app:hintTextColor="@color/colorPrimary"
-                        app:boxStrokeColor="@color/colorPrimary">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCycle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:clickable="true"
-                            android:cursorVisible="false"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:textColor="@android:color/black" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilStartDate"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="24dp"
-                        android:hint="Start date"
-                        app:helperText="The renewal date is worked out from this"
-                        app:helperTextEnabled="true"
-                        app:hintTextColor="@color/colorPrimary"
-                        app:boxStrokeColor="@color/colorPrimary"
-                        app:startIconDrawable="@android:drawable/ic_menu_my_calendar">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etStartDate"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:clickable="true"
-                            android:cursorVisible="false"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:textColor="@android:color/black" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSave"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:text="Save subscription"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        app:cornerRadius="8dp" />
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Save subscription" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

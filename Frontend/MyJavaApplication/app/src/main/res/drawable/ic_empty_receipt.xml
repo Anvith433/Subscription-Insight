@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A blank receipt with its total marked: the empty-state picture. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:fillColor="#F6D365"
+        android:pathData="M22,40h20v6h-20z" />
+    <path
+        android:pathData="M16,8h32v46l-4,-3l-4,3l-4,-3l-4,3l-4,-3l-4,3l-4,-3l-4,3z"
+        android:strokeWidth="2"
+        android:strokeColor="@color/ink_muted"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M23,18h18M23,25h18M23,32h10"
+        android:strokeWidth="2"
+        android:strokeColor="@color/ink_muted"
+        android:strokeLineCap="round" />
+</vector>

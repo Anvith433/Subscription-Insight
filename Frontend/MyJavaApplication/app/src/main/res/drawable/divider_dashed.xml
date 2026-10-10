@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The tear line on the summary "receipt". Needs layerType="software" on its view. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="line">
+    <stroke
+        android:width="1dp"
+        android:color="@color/field_stroke"
+        android:dashGap="5dp"
+        android:dashWidth="5dp" />
+</shape>

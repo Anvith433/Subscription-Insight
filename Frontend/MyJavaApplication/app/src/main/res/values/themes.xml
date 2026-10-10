@@ -1,16 +1,56 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.MyJavaApplication" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
-        <item name="colorOnPrimary">@color/colorOnPrimary</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/colorSecondary</item>
-        <item name="colorSecondaryVariant">@color/colorSecondary</item>
-        <item name="colorOnSecondary">@color/colorOnSecondary</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+    <!--
+      Everything that can be decided once is decided here, so the layouts only say what
+      is particular to them: every TextInputLayout, MaterialButton, MaterialCardView,
+      toolbar and extended FAB picks up its Insight style through the *Style attributes.
+
+      The app-wide font is set at theme level. A theme-level fontFamily outranks a
+      TextView's textAppearance, so text that needs a different face sets it through
+      style="@style/Text.Insight.*" rather than android:textAppearance.
+    -->
+    <style name="Base.Theme.Insight" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ink</item>
+        <item name="colorPrimaryVariant">@color/ink</item>
+        <item name="colorOnPrimary">@color/on_ink</item>
+        <item name="colorSecondary">@color/ink</item>
+        <item name="colorSecondaryVariant">@color/ink</item>
+        <item name="colorOnSecondary">@color/on_ink</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorOnSurface">@color/ink</item>
+        <item name="colorOnBackground">@color/ink</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorControlNormal">@color/ink</item>
+        <item name="android:colorBackground">@color/paper</item>
+        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:textColorPrimary">@color/ink</item>
+        <item name="android:textColorSecondary">@color/ink_muted</item>
+
+        <item name="android:statusBarColor">@color/paper</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
+
+        <item name="android:fontFamily">@font/dm_sans</item>
+        <item name="fontFamily">@font/dm_sans</item>
+
+        <item name="homeAsUpIndicator">@drawable/ic_arrow_back</item>
+        <item name="textInputStyle">@style/Widget.Insight.TextField</item>
+        <item name="materialButtonStyle">@style/Widget.Insight.Button</item>
+        <item name="materialCardViewStyle">@style/Widget.Insight.Card</item>
+        <item name="toolbarStyle">@style/Widget.Insight.Toolbar</item>
+        <item name="extendedFloatingActionButtonStyle">@style/Widget.Insight.Fab</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Insight.Dialog</item>
+    </style>
+
+    <style name="Theme.MyJavaApplication" parent="Base.Theme.Insight" />
+
+    <!-- Rounder, paper-coloured dialogs with sentence-case buttons. -->
+    <style name="ThemeOverlay.Insight.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">@color/card</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Insight.Dialog</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Insight.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Insight.DialogButton</item>
+    </style>
+
+    <style name="ShapeAppearance.Insight.Dialog" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerSize">24dp</item>
     </style>
 </resources>

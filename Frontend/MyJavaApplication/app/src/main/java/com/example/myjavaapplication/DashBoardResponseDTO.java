@@ -80,20 +80,4 @@ public class DashBoardResponseDTO {
 
     // This ensures the BarChart sees the same minutes as the list
     public long getUsageTime() { return usageMinutes; }
-
-    /** "1 h 12 min used", or an explicit "no usage synced" rather than a bare "0 mins". */
-    public String getUsageLabel() {
-        if (!hasUsageData) {
-            return "No usage synced" + (billingPeriod == null ? "" : " for " + billingPeriod);
-        }
-        if (usageMinutes < 60) {
-            return usageMinutes + " min used";
-        }
-        return (usageMinutes / 60) + " h " + (usageMinutes % 60) + " min used";
-    }
-
-    /** "INR 129.00", formatted so a price never renders as "129.0". */
-    public String getPriceLabel() {
-        return getCurrency() + " " + String.format(java.util.Locale.US, "%.2f", price);
-    }
 }

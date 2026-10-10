@@ -1,198 +1,419 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sign-in, then home. One screen with two states: loginCard is hidden on success and
+  layoutPostLogin shown in its place.
+
+  The home state is the four-step setup as a checklist rather than four coloured
+  buttons. The steps have to happen in order (an empty subscription list makes sync
+  pointless), and a numbered list says that by itself. The last step is the payoff, so
+  it is the one dark card.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="@color/colorBackground">
+    android:background="@color/paper"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center"
-        android:padding="32dp">
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="32dp">
 
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_mark" />
+
+            <TextView
+                style="@style/Text.Insight.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Subscription Insight"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- Sign in / sign up -->
+        <LinearLayout
             android:id="@+id/loginCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/colorSurface">
+            android:orientation="vertical">
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/tvTitle"
+                style="@style/Text.Insight.Display"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp">
+                android:layout_marginTop="56dp"
+                android:text="Is that ₹199 a month actually worth it?" />
 
-                <TextView
-                    android:id="@+id/tvTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Subscription Insight"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/colorPrimary"
-                    android:layout_gravity="center"
-                    android:layout_marginBottom="32dp" />
+            <TextView
+                android:id="@+id/tvSubtitle"
+                style="@style/Text.Insight.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="32dp"
+                android:text="Line up what you pay for each subscription against how much you actually use it." />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilActualUsername"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilActualUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:hint="Your name"
+                android:visibility="gone">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etActualUsername"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Full Name"
-                    android:visibility="gone"
-                    android:layout_marginBottom="16dp"
-                    app:startIconDrawable="@android:drawable/ic_menu_myplaces"
-                    app:hintTextColor="@color/colorPrimary"
-                    app:boxStrokeColor="@color/colorPrimary">
+                    android:inputType="textPersonName" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etActualUsername"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/black"
-                        android:inputType="textPersonName" />
-                </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:hint="Email or username">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilEmail"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Gmail Address"
-                    android:layout_marginBottom="16dp"
-                    app:startIconDrawable="@android:drawable/ic_dialog_email"
-                    app:hintTextColor="@color/colorPrimary"
-                    app:boxStrokeColor="@color/colorPrimary">
+                    android:inputType="textEmailAddress" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etEmail"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/black"
-                        android:inputType="textEmailAddress" />
-                </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:hint="Password"
+                app:endIconMode="password_toggle">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilPassword"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Password"
-                    android:layout_marginBottom="16dp"
-                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
-                    app:passwordToggleEnabled="true"
-                    app:hintTextColor="@color/colorPrimary"
-                    app:boxStrokeColor="@color/colorPrimary">
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/black"
-                        android:inputType="textPassword" />
-                </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilConfirmPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:hint="Confirm password"
+                android:visibility="gone"
+                app:endIconMode="password_toggle">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilConfirmPassword"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etConfirmPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Confirm Password"
-                    android:visibility="gone"
-                    android:layout_marginBottom="24dp"
-                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
-                    app:passwordToggleEnabled="true"
-                    app:hintTextColor="@color/colorPrimary"
-                    app:boxStrokeColor="@color/colorPrimary">
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etConfirmPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/black"
-                        android:inputType="textPassword" />
-                </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Sign in" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnLogin"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="Login"
-                    app:cornerRadius="8dp"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
+            <!-- Text is set from MainActivity, which bolds the action half. -->
+            <TextView
+                android:id="@+id/tvSignupLink"
+                style="@style/Text.Insight.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:padding="10dp"
+                android:text="New here? Create an account" />
+        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvSignupLink"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="New user? Sign up here"
-                    android:textColor="@color/colorPrimary"
-                    android:layout_gravity="center"
-                    android:textStyle="bold"
-                    android:padding="8dp" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
+        <!-- Home: shown once signed in -->
         <LinearLayout
             android:id="@+id/layoutPostLogin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone"
-            android:layout_marginTop="24dp">
+            android:visibility="gone">
 
-            <com.google.android.material.button.MaterialButton
+            <TextView
+                android:id="@+id/tvGreeting"
+                style="@style/Text.Insight.Display"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="48dp"
+                android:text="Welcome back." />
+
+            <TextView
+                style="@style/Text.Insight.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="28dp"
+                android:text="Four steps between you and an honest answer about what you pay for." />
+
+            <!-- Step 1. The tick replaces the number once usage access is on. -->
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnPermission"
-                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="1. Grant Usage Access"
-                android:layout_marginBottom="12dp"
-                app:cornerRadius="8dp"
-                app:backgroundTint="#4CAF50" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:clickable="true"
+                android:focusable="true">
 
-            <!--
-              Before this button existed, step 2 was Sync, which told a new user to "add
-              a subscription first" with no screen to do it on. Adding one has to come
-              before syncing, so it is numbered that way.
-            -->
-            <com.google.android.material.button.MaterialButton
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp">
+
+                        <TextView
+                            android:id="@+id/tvStep1Number"
+                            style="@style/Text.Insight.StepNumber"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="1" />
+
+                        <ImageView
+                            android:id="@+id/ivStep1Done"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_step_done"
+                            android:contentDescription="Done"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_check"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Text.Insight.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Allow usage access" />
+
+                        <TextView
+                            android:id="@+id/tvStep1Body"
+                            style="@style/Text.Insight.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="So the app can see how long you spend in each app." />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnSubscriptions"
-                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="2. Manage Subscriptions"
-                android:layout_marginBottom="12dp"
-                app:cornerRadius="8dp"
-                app:backgroundTint="@color/indigo_700" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:clickable="true"
+                android:focusable="true">
 
-            <com.google.android.material.button.MaterialButton
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/Text.Insight.StepNumber"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="2" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Text.Insight.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Add your subscriptions" />
+
+                        <TextView
+                            style="@style/Text.Insight.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Pick the apps you pay for and what each one costs." />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnSync"
-                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="3. Sync Usage Data"
-                android:layout_marginBottom="12dp"
-                app:cornerRadius="8dp"
-                app:backgroundTint="@color/blue_600" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:clickable="true"
+                android:focusable="true">
 
-            <com.google.android.material.button.MaterialButton
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/Text.Insight.StepNumber"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="3" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Text.Insight.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sync your usage" />
+
+                        <TextView
+                            style="@style/Text.Insight.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Pull in how long you spent in those apps." />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnDashboard"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="4. View Analytics Dashboard"
-                app:cornerRadius="8dp"
-                app:strokeColor="@color/colorPrimary"
-                android:textColor="@color/colorPrimary" />
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="@color/ink"
+                app:rippleColor="@color/ripple_on_ink"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp">
+
+                    <TextView
+                        style="@style/Text.Insight.StepNumber"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_step_number_accent"
+                        android:text="4" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Text.Insight.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="See what's worth keeping"
+                            android:textColor="@color/on_ink" />
+
+                        <TextView
+                            style="@style/Text.Insight.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Cost per hour, and what you could stop paying for."
+                            android:textColor="@color/on_ink_muted" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/on_ink" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- True of the sync code: it only reports packages the user has added. -->
+            <TextView
+                style="@style/Text.Insight.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="Only the apps you add as subscriptions are ever sent to the server. The rest of your phone stays on your phone." />
         </LinearLayout>
 
     </LinearLayout>
