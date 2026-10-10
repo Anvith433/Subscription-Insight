@@ -7,25 +7,27 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.Locale;
 
 /**
- * How much of the current month a device scan actually looked at.
+ * How much of the current month a single-total usage report looked at.
  *
- * <p>The Android client asks {@code AppsUsageMonitorAPI} for one of three spans and
- * sends which one it used. Before this existed the server ignored that field and
- * filed every scan as the whole month, so a single day's usage became the month's
- * total -- twenty minutes of a 199/month plan read as 597 per hour and produced a
- * confident CANCEL off one day of data.
+ * <p>Only reports that carry one total for a TODAY/WEEK/MONTH window use this -- that
+ * is what the app sent while it measured usage through {@code AppsUsageMonitorAPI}.
+ * The current app reports minutes per day instead (see {@link DailyUsage}), which
+ * needs no window. Before this existed the server ignored the window and filed every
+ * scan as the whole month, so a single day's usage became the month's total --
+ * twenty minutes of a 199/month plan read as 597 per hour and produced a confident
+ * CANCEL off one day of data.
  *
  * <p>Kept free of Spring and JPA on purpose: the day arithmetic is the part most
  * likely to be wrong, and this way it is unit-testable without a database.
  *
- * <h2>Alignment with the device library</h2>
- * The spans mirror the calendar alignment of {@code UsageUtils} inside
- * {@code AppsUsageMonitorAPI-1.1.aar}, read from its bytecode: {@code DAY} is today,
- * {@code WEEK} anchors on Monday ({@code Calendar.set(DAY_OF_WEEK, MONDAY)}) and
- * {@code MONTH} anchors on the 1st ({@code Calendar.set(DAY_OF_MONTH, 1)}). Because
- * {@code MONTH} is calendar-aligned rather than a rolling 30 days, it lines up
- * exactly with the server's {@code YearMonth} period -- a full-month scan is genuinely
- * complete, not merely close.
+ * <h2>What the windows assume</h2>
+ * {@code DAY} is today, {@code WEEK} anchors on Monday and {@code MONTH} on the 1st.
+ * That matches the ranges {@code AppsUsageMonitorAPI} computes, but not what its
+ * MONTH scan actually read: it called {@code queryEvents(INTERVAL_MONTHLY, now)},
+ * passing the constant 2 as the start time, so it returned whatever events the phone
+ * still held -- about the last ten days -- rather than the month. A MONTH total from
+ * that library can therefore be short late in a month and include last month's days
+ * early in it; the server has no way to tell. The day-based reports exist to fix this.
  */
 public enum UsageWindow {
 
